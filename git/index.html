@@ -34,9 +34,6 @@
     <div class="reveal">
       <div class="slides">
 	<section id="committing-slide">Committing
-          <div>
-            <button type="button">Animate</button>
-          </div>
           <div class="git-container">
             <div class="right">
 	      <pre><code></code></pre>
@@ -47,9 +44,6 @@
           </div>
 	</section>
 	<section id="branches-slide">Branches
-          <div>
-            <button type="button">Animate</button>
-          </div>
           <div class="git-container">
             <div class="right">
 	      <pre><code></code></pre>
@@ -67,6 +61,9 @@
       new BranchesSlide(1);
       Reveal.initialize({
 	  width: 1160,
+	  keyboard: {
+	      13: 'next',
+	  },
       });
     </script>
   </body>

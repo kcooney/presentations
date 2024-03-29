@@ -32,32 +32,50 @@ function createGraph(graphContainer) {
     });
 }
 
-class CommittingSlide {
+const slides = {}
+
+class Slide {
+    constructor(slideIndex) {
+	this.slideIndex = slideIndex;
+	slides[slideIndex] = this;
+    }
+
+    initialize() {};
+    onShowSlide() {}
+}
+
+Reveal.on('slidechanged', event => {
+    Reveal.addKeyBinding(39, 'next');
+    if (event.indexh in slides) {
+        slides[event.indexh].onShowSlide();
+    }
+});
+Reveal.on('ready', event => {
+    for (var slideIndex in slides) {
+	slides[slideIndex].initialize();
+    }
+    slides[0].onShowSlide();
+});
+
+class CommittingSlide extends Slide {
     count = 0;
+    addedKeyBinding = false;
 
     constructor(slideIndex) {
+	super(slideIndex);
         this.section = document.getElementById("committing-slide");
-        this.button = this.section.getElementsByTagName("button")[0];
         const gctr = this.section.getElementsByClassName("git-container")[0];
         this.code = gctr.getElementsByTagName("code")[0];
-
-        Reveal.on('slidechanged', event => {
-            if (event.indexh == slideIndex) {
-                this.reset();
-            }
-        });
-        Reveal.on('ready', event => this.initialize());
     }
 
     initialize() {
         this.gitgraph = createGraph(
             this.section.getElementsByClassName("graph-container")[0]);
-        this.button.addEventListener("click", event => this.onButtonClicked());
-        this.reset();
     }
 
-    reset() {
-        this.button.disabled = false;
+    onShowSlide() {
+	Reveal.addKeyBinding(39, () => this.onTransition());
+	this.addedKeyBinding = true;
         this.count = 0;
         this.gitgraph.clear();
 
@@ -67,7 +85,7 @@ class CommittingSlide {
         moveHeadTag(this.main);
     }
 
-    onButtonClicked() {
+    onTransition() {
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
@@ -83,38 +101,29 @@ class CommittingSlide {
             this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
             this.main.commit("Revert shoot faster");
             moveHeadTag(this.main);
-            this.button.disabled = true;
+	    Reveal.addKeyBinding(39, 'next');
             break;
         }
     }
 }
 
-class BranchesSlide {
+class BranchesSlide extends Slide {
     count = 0;
 
     constructor(slideIndex) {
+	super(slideIndex);
         this.section = document.getElementById("branches-slide");
-        this.button = this.section.getElementsByTagName("button")[0];
         const gctr = this.section.getElementsByClassName("git-container")[0];
         this.code = gctr.getElementsByTagName("code")[0];
-
-        Reveal.on('slidechanged', event => {
-            if (event.indexh == slideIndex) {
-                this.reset();
-            }
-        });
-        Reveal.on('ready', event => this.initialize());
     }
 
     initialize() {
         this.gitgraph = createGraph(
             this.section.getElementsByClassName("graph-container")[0]);
-        this.button.addEventListener("click", event => this.onButtonClicked());
-        this.reset();
     }
 
-    reset() {
-        this.button.disabled = false;
+    onShowSlide() {
+	Reveal.addKeyBinding(39, () => this.onTransition());
         this.count = 0;
         this.gitgraph.clear();
 
@@ -127,7 +136,7 @@ class BranchesSlide {
         moveHeadTag(this.main);
     }
 
-    onButtonClicked() {
+    onTransition() {
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git checkout -b chicken/shoot-faster";
@@ -138,7 +147,6 @@ class BranchesSlide {
             break;
         case 2:
             this.main.commit("Add drive subsystem");
-            this.button.disabled = true;
             break;
         }
     }
