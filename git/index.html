@@ -46,13 +46,25 @@
           </div>
         </div>
       </section>
-      <section>Tagging
+      <section id="branches-slide">Branches
+        <div>
+          <button type="button">Animate</button>
+        </div>
+        <div class="git-container">
+          <div class="right">
+	    <pre><code></code></pre>
+          </div>
+          <div class="left">
+            <div align="left" class="graph-container"></div>
+          </div>
+        </div>
       </section>
     </div>
   </div>
 
   <script>
-    committingSlide = new CommittingSlide(0);
+    new CommittingSlide(0);
+    new BranchesSlide(1);
     Reveal.initialize();
   </script>
 </body>
