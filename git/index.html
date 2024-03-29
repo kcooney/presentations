@@ -21,7 +21,7 @@
       }
       .right {
           float: right;
-          width: 500px;
+          width: 600px;
       }
       .left {
           float: none;
@@ -65,7 +65,9 @@
     <script>
       new CommittingSlide(0);
       new BranchesSlide(1);
-      Reveal.initialize();
+      Reveal.initialize({
+	  width: 1160,
+      });
     </script>
   </body>
 </html>
