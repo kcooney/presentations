@@ -46,7 +46,6 @@ class CommittingSlide {
                 this.reset();
             }
         });
-            
         Reveal.on('ready', event => this.initialize());
     }
 
@@ -59,7 +58,7 @@ class CommittingSlide {
 
     reset() {
         this.button.disabled = false;
-        this.count = 0;        
+        this.count = 0;
         this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
@@ -70,22 +69,22 @@ class CommittingSlide {
 
     onButtonClicked() {
         switch (++this.count) {
-          case 1:
-              this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
-              this.main.commit("Add shooter");
-              moveHeadTag(this.main);
-              break;
-           case 2:
-              this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
-              this.main.commit("Shoot faster");
-              moveHeadTag(this.main);
-              break;
-           case 3:
-              this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
-              this.main.commit("Revert shoot faster");
-              moveHeadTag(this.main);
-              this.button.disabled = true;
-              break;
+        case 1:
+            this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
+            this.main.commit("Add shooter");
+            moveHeadTag(this.main);
+            break;
+        case 2:
+            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.main.commit("Shoot faster");
+            moveHeadTag(this.main);
+            break;
+        case 3:
+            this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
+            this.main.commit("Revert shoot faster");
+            moveHeadTag(this.main);
+            this.button.disabled = true;
+            break;
         }
     }
 }
@@ -104,7 +103,6 @@ class BranchesSlide {
                 this.reset();
             }
         });
-            
         Reveal.on('ready', event => this.initialize());
     }
 
@@ -117,7 +115,7 @@ class BranchesSlide {
 
     reset() {
         this.button.disabled = false;
-        this.count = 0;        
+        this.count = 0;
         this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
@@ -131,17 +129,17 @@ class BranchesSlide {
 
     onButtonClicked() {
         switch (++this.count) {
-          case 1:
-              this.code.innerHTML += "<br />$ git checkout -b chicken/shoot-faster";
-              this.feature = this.main.branch("chicken/shoot-faster");
-              this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
-              this.feature.commit("Shoot faster");
-              moveHeadTag(this.feature);
-              break;                
-          case 2:
-              this.main.commit("Add drive subsystem");
-              this.button.disabled = true;
-              break;
+        case 1:
+            this.code.innerHTML += "<br />$ git checkout -b chicken/shoot-faster";
+            this.feature = this.main.branch("chicken/shoot-faster");
+            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.feature.commit("Shoot faster");
+            moveHeadTag(this.feature);
+            break;
+        case 2:
+            this.main.commit("Add drive subsystem");
+            this.button.disabled = true;
+            break;
         }
     }
 }

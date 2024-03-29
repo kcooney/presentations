@@ -1,71 +1,71 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>gitgraph.js demo</title>
-  <!-- Reveal.js -->
-  <link rel="stylesheet" href="../reveal.js/dist/reset.css">
-  <link rel="stylesheet" href="../reveal.js/dist/reveal.css">
-  <link rel="stylesheet" href="../reveal.js/dist/theme/solarized.css">
-  <!-- Theme used for syntax highlighted code -->
-  <link rel="stylesheet" href="../reveal.js/plugin/highlight/monokai.css">
-  <script src="../reveal.js/dist/reveal.js"></script>
+  <head>
+    <title>gitgraph.js demo</title>
+    <!-- Reveal.js -->
+    <link rel="stylesheet" href="../reveal.js/dist/reset.css">
+    <link rel="stylesheet" href="../reveal.js/dist/reveal.css">
+    <link rel="stylesheet" href="../reveal.js/dist/theme/solarized.css">
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="../reveal.js/plugin/highlight/monokai.css">
+    <script src="../reveal.js/dist/reveal.js"></script>
 
-  <!-- gitgraph-js  -->
-  <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
-  <script src="./slides.js"></script>
-  
-  <style>
-    .git-container {
-        height: auto;
-        overflow: hidden;
-    }
-    .right {
-        float: right;
-        width: 500px;
-    }
-    .left {
-        float: none;
-        width: auto;
-        overflow: hidden;
-    }
-  </style>
-</head>
-<body>
-  <div class="reveal">
-    <div class="slides">
-      <section id="committing-slide">Committing
-        <div>
-          <button type="button">Animate</button>
-        </div>
-        <div class="git-container">
-          <div class="right">
-	    <pre><code></code></pre>
+    <!-- gitgraph-js  -->
+    <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
+    <script src="./slides.js"></script>
+
+    <style>
+      .git-container {
+          height: auto;
+          overflow: hidden;
+      }
+      .right {
+          float: right;
+          width: 500px;
+      }
+      .left {
+          float: none;
+          width: auto;
+          overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+	<section id="committing-slide">Committing
+          <div>
+            <button type="button">Animate</button>
           </div>
-          <div class="left">
-            <div align="left" class="graph-container"></div>
+          <div class="git-container">
+            <div class="right">
+	      <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div align="left" class="graph-container"></div>
+            </div>
           </div>
-        </div>
-      </section>
-      <section id="branches-slide">Branches
-        <div>
-          <button type="button">Animate</button>
-        </div>
-        <div class="git-container">
-          <div class="right">
-	    <pre><code></code></pre>
+	</section>
+	<section id="branches-slide">Branches
+          <div>
+            <button type="button">Animate</button>
           </div>
-          <div class="left">
-            <div align="left" class="graph-container"></div>
+          <div class="git-container">
+            <div class="right">
+	      <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div align="left" class="graph-container"></div>
+            </div>
           </div>
-        </div>
-      </section>
+	</section>
+      </div>
     </div>
-  </div>
 
-  <script>
-    new CommittingSlide(0);
-    new BranchesSlide(1);
-    Reveal.initialize();
-  </script>
-</body>
+    <script>
+      new CommittingSlide(0);
+      new BranchesSlide(1);
+      Reveal.initialize();
+    </script>
+  </body>
 </html>
