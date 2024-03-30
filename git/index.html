@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>gitgraph.js demo</title>
+    <title>Branching in Git</title>
+    <link rel="icon" href="favicon.ico">
     <!-- Reveal.js -->
     <link rel="stylesheet" href="../reveal.js/dist/reset.css">
     <link rel="stylesheet" href="../reveal.js/dist/reveal.css">
-    <link rel="stylesheet" href="../reveal.js/dist/theme/solarized.css">
+    <link rel="stylesheet" href="../reveal.js/dist/theme/simple.css">
     <!-- Theme used for syntax highlighted code -->
     <link rel="stylesheet" href="../reveal.js/plugin/highlight/monokai.css">
     <script src="../reveal.js/dist/reveal.js"></script>
+    <script src="../reveal.js/plugin/markdown/markdown.js"></script>
 
     <!-- gitgraph-js  -->
     <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
     <script src="./slides.js"></script>
 
     <style>
+      .reveal h2 {
+	  font-size: 70px
+      }
       .git-container {
           height: auto;
           overflow: hidden;
@@ -33,7 +38,34 @@
   <body>
     <div class="reveal">
       <div class="slides">
-	<section id="committing-slide">Committing
+	<section data-markdown>
+	  <textarea data-template>
+	  # Branching in Git
+
+	  Kevin W. Cooney - https://github.com/kcooney
+
+	  Gear Heads - FRC 2813
+
+	  Adapted from the [Branches in a Nutshell](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)
+	  chapter of [Pro Git](https://git-scm.com/book/en/v2/)
+
+	  ---
+	  - Use the forward arrow key to see transitions
+	  - Use the arrows to change slides
+	  </textarea>
+	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## What is a Commit?
+	    - A commit contains a pointer to snapshot of code
+	    - It also contains metadata, including the author's name
+	      and the commit message
+	    - All commits but the first contain a pointer to the
+	      commit (or commits) that came before it (its parent or
+	      parents)
+	  </textarea>
+	</section>
+	<section id="committing-slide"><h2>Committing</h2>
           <div class="git-container">
             <div class="right">
 	      <pre><code></code></pre>
@@ -42,6 +74,12 @@
               <div align="left" class="graph-container"></div>
             </div>
           </div>
+	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## What is a Branch?
+	    - A branch is a movable pointer to a commit
+	  </textarea>
 	</section>
 	<section id="branches-slide">Branches
           <div class="git-container">
@@ -53,16 +91,31 @@
             </div>
           </div>
 	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## Why Branch?
+	    - 
+	  </textarea>
+	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## References
+	    - Pro Git - https://git-scm.com/book/en/v2/
+	  </textarea>
+	</section>
       </div>
     </div>
 
     <script>
-      new CommittingSlide(0);
-      new BranchesSlide(1);
+      new CommittingSlide();
+      new BranchesSlide();
       Reveal.initialize({
+	  plugins: [ RevealMarkdown ],
 	  width: 1160,
 	  keyboard: {
 	      13: 'next',
+	  },
+	  markdown: {
 	  },
       });
     </script>

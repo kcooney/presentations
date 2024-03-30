@@ -35,9 +35,10 @@ function createGraph(graphContainer) {
 const slides = {}
 
 class Slide {
-    constructor(slideIndex) {
-	this.slideIndex = slideIndex;
-	slides[slideIndex] = this;
+    constructor(sectionId) {
+	this.sectionId = sectionId;
+        this.section = document.getElementById(sectionId);
+	slides[sectionId] = this;
     }
 
     initialize() {};
@@ -46,24 +47,25 @@ class Slide {
 
 Reveal.on('slidechanged', event => {
     Reveal.addKeyBinding(39, 'next');
-    if (event.indexh in slides) {
-        slides[event.indexh].onShowSlide();
+    if (event.currentSlide.id in slides) {
+        slides[event.currentSlide.id].onShowSlide();
     }
 });
 Reveal.on('ready', event => {
     for (var slideIndex in slides) {
 	slides[slideIndex].initialize();
     }
-    slides[0].onShowSlide();
+    if (0 in slides) {
+	slides[0].onShowSlide();
+    }
 });
 
 class CommittingSlide extends Slide {
     count = 0;
     addedKeyBinding = false;
 
-    constructor(slideIndex) {
-	super(slideIndex);
-        this.section = document.getElementById("committing-slide");
+    constructor() {
+	super("committing-slide");
         const gctr = this.section.getElementsByClassName("git-container")[0];
         this.code = gctr.getElementsByTagName("code")[0];
     }
@@ -74,7 +76,7 @@ class CommittingSlide extends Slide {
     }
 
     onShowSlide() {
-	Reveal.addKeyBinding(39, () => this.onTransition());
+	Reveal.addKeyBinding(39, this.onTransition.bind(this));
 	this.addedKeyBinding = true;
         this.count = 0;
         this.gitgraph.clear();
@@ -110,9 +112,8 @@ class CommittingSlide extends Slide {
 class BranchesSlide extends Slide {
     count = 0;
 
-    constructor(slideIndex) {
-	super(slideIndex);
-        this.section = document.getElementById("branches-slide");
+    constructor() {
+	super('branches-slide');
         const gctr = this.section.getElementsByClassName("git-container")[0];
         this.code = gctr.getElementsByTagName("code")[0];
     }
@@ -123,7 +124,7 @@ class BranchesSlide extends Slide {
     }
 
     onShowSlide() {
-	Reveal.addKeyBinding(39, () => this.onTransition());
+	Reveal.addKeyBinding(39, this.onTransition.bind(this));
         this.count = 0;
         this.gitgraph.clear();
 
@@ -147,6 +148,7 @@ class BranchesSlide extends Slide {
             break;
         case 2:
             this.main.commit("Add drive subsystem");
+	    Reveal.addKeyBinding(39, 'next');
             break;
         }
     }
