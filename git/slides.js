@@ -46,6 +46,7 @@ class Slide {
     }
 
     prepareSlide() {
+	this.gitgraph.clear();
 	this.onShowSlide();
 	this.moveHeadTag();
     }
@@ -101,7 +102,6 @@ class CommittingSlide extends Slide {
     onShowSlide() {
 	this.enableTransitions(this.onTransition.bind(this));
         this.count = 0;
-        this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
         this.main = this.gitgraph.branch("main").checkout();
@@ -138,26 +138,62 @@ class BranchesSlide extends Slide {
     onShowSlide() {
 	this.enableTransitions(this.onTransition.bind(this));
         this.count = 0;
-        this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
         this.main = this.gitgraph.branch("main").checkout();
         this.gitgraph.commit("Initial commit");
 
-        this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
+        this.gitgraph.commit("Add shooter");
+    }
+
+    onTransition() {
+        switch (++this.count) {
+	case 1:
+            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.gitgraph.commit("Shoot faster");
+            return true;
+        case 2:
+            this.code.innerHTML += "<br />$ git checkout -b chicken/on-the-bus";
+            this.feature = this.main.branch("chicken/on-the-bus").checkout();
+            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem";
+            this.gitgraph.commit("Add drive subsystem");
+            return true;
+	case 3:
+	    this.main.commit("Add intake");
+	    this.feature.checkout();
+            return false;
+        }
+    }
+}
+
+class TaggingSlide extends Slide {
+    count = 0;
+
+    constructor() {
+	super("tagging-slide");
+        const gctr = this.section.getElementsByClassName("git-container")[0];
+        this.code = gctr.getElementsByTagName("code")[0];
+    }
+
+    onShowSlide() {
+	this.enableTransitions(this.onTransition.bind(this));
+        this.count = 0;
+
+        this.code.innerHTML = "$ git checkout main";
+        this.main = this.gitgraph.branch("main").checkout();
+        this.gitgraph.commit("Initial commit");
         this.gitgraph.commit("Add shooter");
     }
 
     onTransition() {
         switch (++this.count) {
         case 1:
-            this.code.innerHTML += "<br />$ git checkout -b chicken/shoot-faster";
-            this.feature = this.main.branch("chicken/shoot-faster").checkout();
-            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
-            this.gitgraph.commit("Shoot faster");
+            this.code.innerHTML += "<br />$ git tag v1.0";
+            this.gitgraph.tag("v1.0");
             return true;
         case 2:
-            this.main.commit("Add drive subsystem").checkout();
+            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.gitgraph.commit("Shoot faster");
             return false;
         }
     }

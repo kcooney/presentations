@@ -79,9 +79,13 @@
 	  <textarea data-template>
 	    ## What is a Branch?
 	    - A branch is a movable pointer to a commit
+	    - When you checkout a branch, git updates the files in your working
+	      working directory to match the commit that the branch references
+	    - When you make a commit, the currently checked-out branch will be
+	      updated to point to the new commit
 	  </textarea>
 	</section>
-	<section id="branches-slide">Branches
+	<section id="branches-slide"><h2>Branches</h2>
           <div class="git-container">
             <div class="right">
 	      <pre><code></code></pre>
@@ -90,6 +94,37 @@
               <div align="left" class="graph-container"></div>
             </div>
           </div>
+	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## What is a tag?
+	    - A tag is a pointer to a commit
+	    - It is similar to a branch, but it doesn't move
+	    - Branches and tags are *references*
+	  </textarea>
+	</section>
+	<section id="tagging-slide"><h2>Tagging</h2>
+          <div class="git-container">
+            <div class="right">
+	      <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div align="left" class="graph-container"></div>
+            </div>
+          </div>
+	</section>
+	<section data-markdown>
+	  <textarea data-template>
+	    ## What is HEAD?
+	    - HEAD is a special movable pointer to a commit; it always points to
+	      the current branch (or the current commit)
+	    - When you checkout a branch, **git updates HEAD to point to the
+	      branch**, then updates the files in your working directory to
+	      match the commit that HEAD points to
+	    - When you make a commit, the currently checked-out branch will be
+	      updated to point to the new commit; **HEAD still points to the
+	      branch**
+	  </textarea>
 	</section>
 	<section data-markdown>
 	  <textarea data-template>
@@ -109,6 +144,7 @@
     <script>
       new CommittingSlide();
       new BranchesSlide();
+      new TaggingSlide();
       Reveal.initialize({
 	  plugins: [ RevealMarkdown ],
 	  width: 1160,
