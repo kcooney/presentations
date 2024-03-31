@@ -126,6 +126,16 @@
 	      branch**
 	  </textarea>
 	</section>
+	<section id="head-slide"><h2>Moving HEAD</h2>
+          <div class="git-container">
+            <div class="right">
+	      <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div align="left" class="graph-container"></div>
+            </div>
+          </div>
+	</section>
 	<section data-markdown>
 	  <textarea data-template>
 	    ## Why Branch?
@@ -150,6 +160,7 @@
       new CommittingSlide();
       new BranchesSlide();
       new TaggingSlide();
+      new HeadSlide();
       Reveal.initialize({
 	  plugins: [ RevealMarkdown ],
 	  width: 1160,

@@ -68,8 +68,12 @@ class Slide {
         });
     }
 
+    getHead() {
+	return this.gitgraph._graph.refs.getCommit("HEAD");
+    }
+
     moveHeadTag() {
-	const head = this.gitgraph._graph.refs.getCommit("HEAD");
+	const head = this.getHead();
 	if (head) {
 	    this.gitgraph.tag({name: "HEAD", ref: head, style: headStyle});
 	}
@@ -191,6 +195,61 @@ class TaggingSlide extends Slide {
         case 2:
             this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
             this.gitgraph.commit("Shoot faster");
+            return false;
+        }
+    }
+}
+
+class HeadSlide extends Slide {
+    count = 0;
+
+    constructor() {
+	super('head-slide');
+        const gctr = this.section.getElementsByClassName("git-container")[0];
+        this.code = gctr.getElementsByTagName("code")[0];
+    }
+
+    onShowSlide() {
+	this.enableTransitions(this.onTransition.bind(this));
+        this.count = 0;
+
+        this.code.innerHTML = "$ git checkout main";
+        this.gitgraph.commit("Add shooter");
+	this.addShooterCommit = this.getHead();
+    }
+
+    onTransition() {
+        switch (++this.count) {
+	case 1:
+            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.gitgraph.commit("Shoot faster");
+            return true;
+        case 2:
+            this.code.innerHTML += "<br />$ git checkout -b chicken/on-the-bus";
+	    this.main.checkout();
+            this.feature = this.main.branch("chicken/on-the-bus");
+	    this.feature.checkout();
+            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem'";
+            this.gitgraph.commit("Add drive subsystem");
+            return true;
+	case 3:
+	    this.main.commit("Add intake");
+	    this.feature.checkout();
+            return true;
+	case 4:
+	    this.code.innerHTML += "<br />$ git checkout main";
+	    this.main.checkout();
+            return true;
+	case 5:
+            this.code.innerHTML += "<br />$ git checkout " + this.addShooterCommit.substring(0, 7);
+	    this.gitgraph._graph.refs.set("HEAD", this.addShooterCommit);
+            return false;
+	case 6:
+	    // Doesn't work (bug in GitgraphJS?
+            this.code.innerHTML += "<br />$ git checkout -b monkey/bug-fix";
+	    this.code.innerHTML += "<br />$ git commit -a -m 'Fix shooter angle'";
+	    this.gitgraph.branch("monkey/bug-fix").checkout();
+	    this.gitgraph.commit("Fix shooter angle");
             return false;
         }
     }
