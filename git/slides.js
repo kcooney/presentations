@@ -4,6 +4,9 @@ function assert(condition, message) {
     }
 }
 
+const rightArrowKey = 39;
+const leftArrowKey = 37;
+
 const baseTemplate = GitgraphJS.TemplateName.BlackArrow
 const withoutAuthor = GitgraphJS.templateExtend(baseTemplate, {
     commit: {
@@ -41,12 +44,26 @@ class Slide {
 	slides[sectionId] = this;
     }
 
-    initialize() {};
+    initialize() {}
+
     onShowSlide() {}
+
+    enableTransitions(callback) {
+	Reveal.addKeyBinding(rightArrowKey, () => {
+	    Reveal.addKeyBinding(leftArrowKey, () => {
+		Reveal.addKeyBinding(leftArrowKey, 'prev');
+		this.onShowSlide();
+	    });
+	    if (!callback()) {
+		Reveal.addKeyBinding(39, 'next');
+	    }
+        })
+    }
 }
 
 Reveal.on('slidechanged', event => {
-    Reveal.addKeyBinding(39, 'next');
+    Reveal.addKeyBinding(rightArrowKey, 'next');
+    Reveal.addKeyBinding(leftArrowKey, 'prev');
     if (event.currentSlide.id in slides) {
         slides[event.currentSlide.id].onShowSlide();
     }
@@ -55,14 +72,13 @@ Reveal.on('ready', event => {
     for (var slideIndex in slides) {
 	slides[slideIndex].initialize();
     }
-    if (0 in slides) {
-	slides[0].onShowSlide();
+    if (event.currentSlide.id in slides) {
+	slides[event.currentSlide.id].onShowSlide();
     }
 });
 
 class CommittingSlide extends Slide {
     count = 0;
-    addedKeyBinding = false;
 
     constructor() {
 	super("committing-slide");
@@ -76,8 +92,7 @@ class CommittingSlide extends Slide {
     }
 
     onShowSlide() {
-	Reveal.addKeyBinding(39, this.onTransition.bind(this));
-	this.addedKeyBinding = true;
+	this.enableTransitions(this.onTransition.bind(this));
         this.count = 0;
         this.gitgraph.clear();
 
@@ -93,18 +108,17 @@ class CommittingSlide extends Slide {
             this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
             this.main.commit("Add shooter");
             moveHeadTag(this.main);
-            break;
+            return true;
         case 2:
             this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
             this.main.commit("Shoot faster");
             moveHeadTag(this.main);
-            break;
+            return true;
         case 3:
             this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
             this.main.commit("Revert shoot faster");
             moveHeadTag(this.main);
-	    Reveal.addKeyBinding(39, 'next');
-            break;
+	    return false; // No more transitions
         }
     }
 }
@@ -145,11 +159,11 @@ class BranchesSlide extends Slide {
             this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
             this.feature.commit("Shoot faster");
             moveHeadTag(this.feature);
-            break;
+            return true;
         case 2:
             this.main.commit("Add drive subsystem");
 	    Reveal.addKeyBinding(39, 'next');
-            break;
+            return false;
         }
     }
 }
