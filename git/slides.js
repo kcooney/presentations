@@ -22,10 +22,6 @@ const headStyle = {
     strokeColor: "black",
 };
 
-function moveHeadTag(commit) {
-    commit.tag({name: "HEAD", style: headStyle});
-}
-
 function createGraph(graphContainer) {
     return GitgraphJS.createGitgraph(graphContainer, {
         orientation: GitgraphJS.Orientation.VerticalReverse,
@@ -44,7 +40,15 @@ class Slide {
 	slides[sectionId] = this;
     }
 
-    initialize() {}
+    initialize() {
+        this.gitgraph = createGraph(
+            this.section.getElementsByClassName("graph-container")[0]);
+    }
+
+    prepareSlide() {
+	this.onShowSlide();
+	this.moveHeadTag();
+    }
 
     onShowSlide() {}
 
@@ -52,12 +56,20 @@ class Slide {
 	Reveal.addKeyBinding(rightArrowKey, () => {
 	    Reveal.addKeyBinding(leftArrowKey, () => {
 		Reveal.addKeyBinding(leftArrowKey, 'prev');
-		this.onShowSlide();
+		this.prepareSlide();
 	    });
 	    if (!callback()) {
 		Reveal.addKeyBinding(39, 'next');
 	    }
-        })
+	    this.moveHeadTag();
+        });
+    }
+
+    moveHeadTag() {
+	const head = this.gitgraph._graph.refs.getCommit("HEAD");
+	if (head) {
+	    this.gitgraph.tag({name: "HEAD", ref: head, style: headStyle});
+	}
     }
 }
 
@@ -65,7 +77,7 @@ Reveal.on('slidechanged', event => {
     Reveal.addKeyBinding(rightArrowKey, 'next');
     Reveal.addKeyBinding(leftArrowKey, 'prev');
     if (event.currentSlide.id in slides) {
-        slides[event.currentSlide.id].onShowSlide();
+	slides[event.currentSlide.id].prepareSlide();
     }
 });
 Reveal.on('ready', event => {
@@ -73,7 +85,7 @@ Reveal.on('ready', event => {
 	slides[slideIndex].initialize();
     }
     if (event.currentSlide.id in slides) {
-	slides[event.currentSlide.id].onShowSlide();
+	slides[event.currentSlide.id].prepareSlide();
     }
 });
 
@@ -86,38 +98,29 @@ class CommittingSlide extends Slide {
         this.code = gctr.getElementsByTagName("code")[0];
     }
 
-    initialize() {
-        this.gitgraph = createGraph(
-            this.section.getElementsByClassName("graph-container")[0]);
-    }
-
     onShowSlide() {
 	this.enableTransitions(this.onTransition.bind(this));
         this.count = 0;
         this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
-        this.main = this.gitgraph.branch("main");
-        this.main.commit("Initial commit");
-        moveHeadTag(this.main);
+        this.main = this.gitgraph.branch("main").checkout();
+        this.gitgraph.commit("Initial commit");
     }
 
     onTransition() {
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
-            this.main.commit("Add shooter");
-            moveHeadTag(this.main);
+            this.gitgraph.commit("Add shooter");
             return true;
         case 2:
             this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
-            this.main.commit("Shoot faster");
-            moveHeadTag(this.main);
+            this.gitgraph.commit("Shoot faster");
             return true;
         case 3:
             this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
-            this.main.commit("Revert shoot faster");
-            moveHeadTag(this.main);
+            this.gitgraph.commit("Revert shoot faster");
 	    return false; // No more transitions
         }
     }
@@ -132,37 +135,29 @@ class BranchesSlide extends Slide {
         this.code = gctr.getElementsByTagName("code")[0];
     }
 
-    initialize() {
-        this.gitgraph = createGraph(
-            this.section.getElementsByClassName("graph-container")[0]);
-    }
-
     onShowSlide() {
-	Reveal.addKeyBinding(39, this.onTransition.bind(this));
+	this.enableTransitions(this.onTransition.bind(this));
         this.count = 0;
         this.gitgraph.clear();
 
         this.code.innerHTML = "$ git checkout main";
-        this.main = this.gitgraph.branch("main");
-        this.main.commit("Initial commit");
+        this.main = this.gitgraph.branch("main").checkout();
+        this.gitgraph.commit("Initial commit");
 
         this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
-        this.main.commit("Add shooter");
-        moveHeadTag(this.main);
+        this.gitgraph.commit("Add shooter");
     }
 
     onTransition() {
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git checkout -b chicken/shoot-faster";
-            this.feature = this.main.branch("chicken/shoot-faster");
+            this.feature = this.main.branch("chicken/shoot-faster").checkout();
             this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
-            this.feature.commit("Shoot faster");
-            moveHeadTag(this.feature);
+            this.gitgraph.commit("Shoot faster");
             return true;
         case 2:
-            this.main.commit("Add drive subsystem");
-	    Reveal.addKeyBinding(39, 'next');
+            this.main.commit("Add drive subsystem").checkout();
             return false;
         }
     }
