@@ -47,6 +47,8 @@ class Slide {
 
     prepareSlide() {
 	this.gitgraph.clear();
+        this.main = this.gitgraph.branch("main").checkout();
+        this.gitgraph.commit("Initial commit");
 	this.onShowSlide();
 	this.moveHeadTag();
     }
@@ -104,8 +106,6 @@ class CommittingSlide extends Slide {
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
-        this.main = this.gitgraph.branch("main").checkout();
-        this.gitgraph.commit("Initial commit");
     }
 
     onTransition() {
@@ -140,9 +140,6 @@ class BranchesSlide extends Slide {
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
-        this.main = this.gitgraph.branch("main").checkout();
-        this.gitgraph.commit("Initial commit");
-
         this.gitgraph.commit("Add shooter");
     }
 
@@ -154,8 +151,10 @@ class BranchesSlide extends Slide {
             return true;
         case 2:
             this.code.innerHTML += "<br />$ git checkout -b chicken/on-the-bus";
-            this.feature = this.main.branch("chicken/on-the-bus").checkout();
-            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem";
+	    this.main.checkout();
+            this.feature = this.main.branch("chicken/on-the-bus");
+	    this.feature.checkout();
+            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem'";
             this.gitgraph.commit("Add drive subsystem");
             return true;
 	case 3:
@@ -180,8 +179,6 @@ class TaggingSlide extends Slide {
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
-        this.main = this.gitgraph.branch("main").checkout();
-        this.gitgraph.commit("Initial commit");
         this.gitgraph.commit("Add shooter");
     }
 
