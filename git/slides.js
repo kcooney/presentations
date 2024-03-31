@@ -115,15 +115,15 @@ class CommittingSlide extends Slide {
     onTransition() {
         switch (++this.count) {
         case 1:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Add shooter'";
+            this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
             this.gitgraph.commit("Add shooter");
             return true;
         case 2:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.gitgraph.commit("Shoot faster");
             return true;
         case 3:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Revert shoot faster'";
+            this.code.innerHTML += "<br />$ git commit -m 'Revert shoot faster'";
             this.gitgraph.commit("Revert shoot faster");
 	    return false; // No more transitions
         }
@@ -150,7 +150,7 @@ class BranchesSlide extends Slide {
     onTransition() {
         switch (++this.count) {
 	case 1:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.gitgraph.commit("Shoot faster");
             return true;
         case 2:
@@ -158,7 +158,7 @@ class BranchesSlide extends Slide {
 	    this.main.checkout();
             this.feature = this.main.branch("chicken/on-the-bus");
 	    this.feature.checkout();
-            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem'";
+            this.code.innerHTML += "<br />$ git commit -m 'Add drive subsystem'";
             this.gitgraph.commit("Add drive subsystem");
             return true;
 	case 3:
@@ -193,7 +193,7 @@ class TaggingSlide extends Slide {
             this.gitgraph.tag("v1.0");
             return true;
         case 2:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.gitgraph.commit("Shoot faster");
             return false;
         }
@@ -221,7 +221,7 @@ class HeadSlide extends Slide {
     onTransition() {
         switch (++this.count) {
 	case 1:
-            this.code.innerHTML += "<br />$ git commit -a -m 'Shoot faster'";
+            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.gitgraph.commit("Shoot faster");
             return true;
         case 2:
@@ -229,7 +229,7 @@ class HeadSlide extends Slide {
 	    this.main.checkout();
             this.feature = this.main.branch("chicken/on-the-bus");
 	    this.feature.checkout();
-            this.code.innerHTML += "<br />$ git commit -a -m 'Add drive subsystem'";
+            this.code.innerHTML += "<br />$ git commit -m 'Add drive subsystem'";
             this.gitgraph.commit("Add drive subsystem");
             return true;
 	case 3:
@@ -247,7 +247,7 @@ class HeadSlide extends Slide {
 	case 6:
 	    // Doesn't work (bug in GitgraphJS?
             this.code.innerHTML += "<br />$ git checkout -b monkey/bug-fix";
-	    this.code.innerHTML += "<br />$ git commit -a -m 'Fix shooter angle'";
+	    this.code.innerHTML += "<br />$ git commit -m 'Fix shooter angle'";
 	    this.gitgraph.branch("monkey/bug-fix").checkout();
 	    this.gitgraph.commit("Fix shooter angle");
             return false;
