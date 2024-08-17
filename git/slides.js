@@ -243,13 +243,16 @@ class HeadSlide extends Slide {
         case 5:
             this.code.innerHTML += "<br />$ git checkout " + this.addShooterCommit.substring(0, 7);
             this.gitgraph._graph.refs.set("HEAD", this.addShooterCommit);
-            return false;
+            return true;
         case 6:
             // Doesn't work (bug in GitgraphJS?
             this.code.innerHTML += "<br />$ git checkout -b monkey/bug-fix";
             this.code.innerHTML += "<br />$ git commit -m 'Fix shooter angle'";
-            this.gitgraph.branch("monkey/bug-fix").checkout();
-            this.gitgraph.commit("Fix shooter angle");
+            this.bugFix = this.gitgraph.branch("monkey/bug-fix")
+            this.bugFix.commit("Fix shooter angle").checkout();
+            return true;
+        case 7:
+            this.bugFix.commit("One more fix");
             return false;
         }
     }
