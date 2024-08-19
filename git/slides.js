@@ -58,7 +58,7 @@ class Slide {
     }
 
     onShowSlide() {
-	this.onResetSlide();
+        this.onResetSlide();
     }
 
     onResetSlide() {}
@@ -67,7 +67,7 @@ class Slide {
 
     enableTransitions(callback) {
         Reveal.addKeyBinding(rightArrowKey, () => {
-	    // If left pressed, slide resets, and next left goes to prev slide.
+            // If left pressed, slide resets, and next left goes to prev slide.
             Reveal.addKeyBinding(leftArrowKey, () => {
                 Reveal.addKeyBinding(leftArrowKey, 'prev');
                 this.onResetSlide();
@@ -94,11 +94,11 @@ class GitGraphSlide extends Slide {
     }
 
     enableTransitions(callback) {
-	super.enableTransitions(() => {
-	    const result = callback();
+        super.enableTransitions(() => {
+            const result = callback();
             this.moveHeadTag();
-	    return result
-	});
+            return result
+        });
     }
 
     getHead() {
@@ -145,12 +145,12 @@ class CommittingSlide extends GitGraphSlide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onResetSlide() {
-	super.onResetSlide();
+        super.onResetSlide();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
@@ -186,17 +186,17 @@ class BranchesSlide extends GitGraphSlide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onResetSlide() {
-	super.onResetSlide();
+        super.onResetSlide();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
         this.gitgraph.commit("Add shooter");
-	this.moveHeadTag();
+        this.moveHeadTag();
     }
 
     onTransition() {
@@ -233,17 +233,17 @@ class TaggingSlide extends GitGraphSlide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onResetSlide() {
-	super.onResetSlide();
+        super.onResetSlide();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
         this.gitgraph.commit("Add shooter");
-	this.moveHeadTag();
+        this.moveHeadTag();
     }
 
     onTransition() {
@@ -272,17 +272,17 @@ class HeadSlide extends GitGraphSlide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onResetSlide() {
-	super.onResetSlide();
+        super.onResetSlide();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
         this.gitgraph.commit("Add shooter");
-	this.moveHeadTag();
+        this.moveHeadTag();
         this.addShooterCommit = this.getHead();
     }
 
@@ -337,29 +337,29 @@ class GraphologySlide extends Slide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onHideSlide() {
-	this.sigmaInstance.kill();
-	super.onHideSlide();
+        this.sigmaInstance.kill();
+        super.onHideSlide();
     }
 
     onResetSlide() {
-	super.onResetSlide();
-	this.graph.clear();
+        super.onResetSlide();
+        this.graph.clear();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
-	this.graph.addNode('1a1a9bf', {
-	    label: "1a1a9bf Initial commit",
-	    x: 0, y: 2, size: 15, color: "blue" });
+        this.graph.addNode('1a1a9bf', {
+            label: "1a1a9bf Initial commit",
+            x: 0, y: 2, size: 15, color: "blue" });
         this.graph.addNode('5f68664', {
-	    label: "5f68664 Add shooter",
-	    x: 0, y: 1, size: 15, color: "blue" });
+            label: "5f68664 Add shooter",
+            x: 0, y: 1, size: 15, color: "blue" });
         this.graph.addEdge('5f68664', '1a1a9bf', { size: 5, color: "black", type: "arrow" });
-	this.sigmaInstance = new Sigma(this.graph, this.section.getElementsByClassName("sigma-container")[0]);
+        this.sigmaInstance = new Sigma(this.graph, this.section.getElementsByClassName("sigma-container")[0]);
     }
 
     onTransition() {
@@ -370,8 +370,59 @@ class GraphologySlide extends Slide {
             this.graph.addEdge('5f68664', '6e04e30', { size: 5, color: "purple" });
             return true;
         case 2:
-	    return false; // No more transitions
-	}
+            return false; // No more transitions
+        }
+    }
+}
+
+class Git {
+    constructor() {
+        this.commands = [];
+    }
+
+    commit() {
+        this.commands.push(commit());
+        return this;
+    }
+
+    branch(name) {
+        this.commands.push("branch " + name);
+        return this;
+    }
+
+    checkout(branch, create = false) {
+        if (create) {
+            this.branch(branch);
+        }
+        this.commands.push("checkout " + branch);
+        return this;
+    }
+
+    merge(branch) {
+        this.commands.push("merge " + branch);
+        return this;
+    }
+
+    graphDefinition(steps = Number.MAX_SAFE_INTEGER) {
+        if (steps > this.commands.length) {
+            steps = this.commands.length;
+        }
+        var lastCommit = -1;
+        for (let i = 0; i < steps; i++) {
+            let command = this.commands[i];
+            if (command.startsWith("commit ") || command.startsWith("merge ")) {
+                lastCommit = i;
+            }
+        }
+        var commands = [];
+        for (let i = 0; i < steps; i++) {
+            if (i == lastCommit) {
+                commands.push(this.commands[i] + " type: HIGHLIGHT");                
+            } else {
+                commands.push(this.commands[i]);
+            }
+        }
+        return ['gitGraph TB:',commit()].concat(commands).join('\n');
     }
 }
 
@@ -379,11 +430,11 @@ class MermaidSlide extends Slide {
     static { Slide.derived.add(this); }
 
     static setMermaid(mermaid) {
-	this.mermaid = mermaid;
+        this.mermaid = mermaid;
     }
 
     static getMermaid() {
-	return this.mermaid;
+        return this.mermaid;
     }
 
     constructor() {
@@ -392,39 +443,32 @@ class MermaidSlide extends Slide {
     }
 
     onShowSlide() {
-	super.onShowSlide();
+        super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
     onResetSlide() {
-	super.onResetSlide();
-	this.count = 0;
+        super.onResetSlide();
+        this.count = 0;
 
-	this.commands = [
-	    commit(),
-	    "branch develop",
-	    "checkout develop",
-	    commit(), commit(),
-            "checkout main",
-            "merge develop",
-	    "commit",
-	    "commit",
-	];
-	this.onTransition();
+        this.git = new Git();
+        this.git.commit().checkout("develop", true);
+        this.git.commit().commit().checkout("main");
+        this.git.merge("develop").commit().commit();
+        this.onTransition();
     }
 
     onTransition() {
-	var mermaid = MermaidSlide.getMermaid();
-	var element = this.mermaidElement;
-	var commands = ['gitGraph TB:',commit()].concat(this.commands.slice(0, this.count));
-	
+        var mermaid = MermaidSlide.getMermaid();
+        var element = this.mermaidElement;
+        var graphDefinition = this.git.graphDefinition(this.count);
+        
         const drawDiagram = async function () {
-	    const graphDefinition = commands.join('\n');
             const { svg } = await mermaid.render('graphDiv', graphDefinition);
             element.innerHTML = svg;
         };
 
-	(async () => await drawDiagram())();
-	return this.count++ < this.commands.length;
+        (async () => await drawDiagram())();
+        return this.count++ < this.git.commands.length;
     }
 }
