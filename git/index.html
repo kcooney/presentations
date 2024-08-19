@@ -22,6 +22,13 @@
 
     <script src="./slides.js"></script>
 
+    <!-- Mermaid; https://mermaid.js.org/ -->
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+      MermaidSlide.setMermaid(mermaid);
+    </script>
+
     <style>
       .reveal h2 {
 	  font-size: 70px
@@ -74,6 +81,9 @@
 	      commit (or commits) that came before it (its parent or
 	      parents)
 	  </textarea>
+	</section>
+        <section id="mermaid-slide"><h2>Mermaid Demo</h2>
+	  <pre class="mermaid"></pre>
 	</section>
         <section id="graphology-slide"><h2>Graphology Demo</h2>
           <div class="git-container">

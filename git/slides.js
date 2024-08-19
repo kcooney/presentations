@@ -4,6 +4,21 @@ function assert(condition, message) {
     }
 }
 
+function sha1() {
+    let result = '';
+    const characters = '0123456789abcdef';
+    const charactersLength = characters.length;
+    for (let i = 0; i < 7; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+function commit() {
+    return 'commit id: "' + sha1() + '"'
+}
+
+
 const rightArrowKey = 39;
 const leftArrowKey = 37;
 
@@ -357,5 +372,59 @@ class GraphologySlide extends Slide {
         case 2:
 	    return false; // No more transitions
 	}
+    }
+}
+
+class MermaidSlide extends Slide {
+    static { Slide.derived.add(this); }
+
+    static setMermaid(mermaid) {
+	this.mermaid = mermaid;
+    }
+
+    static getMermaid() {
+	return this.mermaid;
+    }
+
+    constructor() {
+        super("mermaid-slide");
+        this.mermaidElement = this.section.getElementsByClassName("mermaid")[0];
+    }
+
+    onShowSlide() {
+	super.onShowSlide();
+        this.enableTransitions(this.onTransition.bind(this));
+    }
+
+    onResetSlide() {
+	super.onResetSlide();
+	this.count = 0;
+
+	this.commands = [
+	    commit(),
+	    "branch develop",
+	    "checkout develop",
+	    commit(), commit(),
+            "checkout main",
+            "merge develop",
+	    "commit",
+	    "commit",
+	];
+	this.onTransition();
+    }
+
+    onTransition() {
+	var mermaid = MermaidSlide.getMermaid();
+	var element = this.mermaidElement;
+	var commands = ['gitGraph TB:',commit()].concat(this.commands.slice(0, this.count));
+	
+        const drawDiagram = async function () {
+	    const graphDefinition = commands.join('\n');
+            const { svg } = await mermaid.render('graphDiv', graphDefinition);
+            element.innerHTML = svg;
+        };
+
+	(async () => await drawDiagram())();
+	return this.count++ < this.commands.length;
     }
 }
