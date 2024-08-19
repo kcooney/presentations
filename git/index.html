@@ -14,6 +14,12 @@
 
     <!-- gitgraph-js  -->
     <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
+
+    <!-- Graphology; https://graphology.github.io/ -->
+    <script src="graphology.min.js"></script>
+    <!-- Sigma; https://www.npmjs.com/package/sigma -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js" integrity="sha512-iiPEYww3QXZU5C795JnnINBRNgHqDnRHs9mA7aJoqx4pNE4u3CknCDGmePHFoHtKR/6C9aIcRFa+HJ6obtlteQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script src="./slides.js"></script>
 
     <style>
@@ -23,6 +29,10 @@
       .git-container {
           height: auto;
           overflow: hidden;
+      }
+      .sigma-container {
+          height: 500px;
+	  width: 500px;
       }
       .right {
           float: right;
@@ -64,6 +74,16 @@
 	      commit (or commits) that came before it (its parent or
 	      parents)
 	  </textarea>
+	</section>
+        <section id="graphology-slide"><h2>Graphology Demo</h2>
+          <div class="git-container">
+            <div class="right">
+	      <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div align="left" class="sigma-container"></div>
+            </div>
+          </div>
 	</section>
 	<section id="committing-slide"><h2>Committing</h2>
           <div class="git-container">
@@ -157,10 +177,6 @@
     </div>
 
     <script>
-      new CommittingSlide();
-      new BranchesSlide();
-      new TaggingSlide();
-      new HeadSlide();
       Reveal.initialize({
 	  plugins: [ RevealMarkdown ],
 	  width: 1160,
