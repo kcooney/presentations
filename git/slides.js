@@ -376,8 +376,9 @@ class GraphologySlide extends Slide {
 }
 
 class Git {
-    constructor() {
-        this.commands = [];
+    constructor(code_element) {
+        this.commands = [commit()];
+        this.code = code_element;
     }
 
     commit() {
@@ -404,25 +405,28 @@ class Git {
     }
 
     graphDefinition(steps = Number.MAX_SAFE_INTEGER) {
-        if (steps > this.commands.length) {
-            steps = this.commands.length;
+        if (steps >= this.commands.length) {
+            steps = this.commands.length - 1;
         }
-        var lastCommit = -1;
-        for (let i = 0; i < steps; i++) {
+        var lastCommit = 0;
+        for (let i = 0; i <= steps; i++) {
             let command = this.commands[i];
             if (command.startsWith("commit ") || command.startsWith("merge ")) {
                 lastCommit = i;
             }
         }
         var commands = [];
-        for (let i = 0; i < steps; i++) {
+        for (let i = 0; i <= steps; i++) {
             if (i == lastCommit) {
                 commands.push(this.commands[i] + " type: HIGHLIGHT");                
             } else {
                 commands.push(this.commands[i]);
             }
         }
-        return ['gitGraph TB:',commit()].concat(commands).join('\n');
+        if (steps > 0) {
+            this.code.innerHTML += "<br />" + this.commands[steps];
+        }
+        return ['gitGraph TB:'].concat(commands).join('\n');
     }
 }
 
@@ -440,6 +444,7 @@ class MermaidSlide extends Slide {
     constructor() {
         super("mermaid-slide");
         this.mermaidElement = this.section.getElementsByClassName("mermaid")[0];
+        this.code = this.section.getElementsByTagName("code")[0];
     }
 
     onShowSlide() {
@@ -451,7 +456,8 @@ class MermaidSlide extends Slide {
         super.onResetSlide();
         this.count = 0;
 
-        this.git = new Git();
+        this.code.innerHTML = "$ git checkout main";
+        this.git = new Git(this.code);
         this.git.commit().checkout("develop", true);
         this.git.commit().commit().checkout("main");
         this.git.merge("develop").commit().commit();
