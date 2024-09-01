@@ -1,0 +1,24 @@
+{
+  "name": "git",
+  "version": "1.0.0",
+  "main": "graphology.min.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kcooney/presentations.git"
+  },
+  "author": "Kevin Cooney",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kcooney/presentations/issues"
+  },
+  "homepage": "https://github.com/kcooney/presentations#readme",
+  "description": "",
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "eslint": "^9.9.1",
+    "globals": "^15.9.0"
+  }
+}
