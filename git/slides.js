@@ -377,11 +377,13 @@ class GitCommand {
         this.git_command = command;
     }
 
+    execute(repo) {} // eslint-disable-line no-unused-vars
+
     command() {
         return this.git_command;
     }
 
-    actions(highlight = false) {} // eslint-disable-line no-unused-vars
+    actions(repo) {} // eslint-disable-line no-unused-vars
 
     commit() {
         return null;
@@ -395,9 +397,13 @@ class Commit extends GitCommand {
         this.sha1 = sha1();
     }
 
-    actions(highlight = false) {
+    execute(repo) {
+	repo.commit(this.sha1);
+    }
+
+    actions(repo) {
         var action = 'commit id: "' + this.sha1 + '"';
-        if (highlight) {
+        if (repo.head == this.sha1) {
             action += " type: HIGHLIGHT";
         }
         return [action];
@@ -416,6 +422,13 @@ class Checkout extends GitCommand {
         this.create = create;
     }
 
+    execute(repo) {
+	if (this.create) {
+	    repo.branch(this.branch);
+	}
+	repo.checkout(this.branch);
+    }
+
     command() {
         if (this.create) {
             return "git checkout -b " + this.branch;
@@ -423,7 +436,7 @@ class Checkout extends GitCommand {
         return "git checkout " + this.branch;
     }
 
-    actions(highlight = false) { // eslint-disable-line no-unused-vars
+    actions(repo) { // eslint-disable-line no-unused-vars
         var a = [];
         if (this.create) {
             a.push("branch " + this.branch);
@@ -440,7 +453,11 @@ class Branch extends GitCommand {
         this.branch = name;
     }
 
-    actions() {
+    execute(repo) {
+	repo.branch(this.branch);
+    }
+
+    actions(repo) { // eslint-disable-line no-unused-vars
         return ["branch " + this.branch];
     }
 }
@@ -450,14 +467,56 @@ class Merge extends GitCommand {
     constructor(branch) {
         super("git merge " + name);
         this.branch = branch;
+        this.sha1 = sha1();
     }
 
-    actions(highlight = false) {
-        var action = "merge " + this.branch;
-        if (highlight) {
-            action += " type: HIGHLIGHT";
+    execute(repo) {
+	repo.merge(this.branch, this.sha1);
+    }
+
+    actions(repo) {
+        var action = 'merge ' + this.branch + ' id: "' + this.sha1 + '"';
+        if (repo.head == this.sha1) {
+            action += ' type: HIGHLIGHT';
         }
         return [action];
+    }
+}
+
+class Repo {
+    constructor() {
+	this.head = sha1();
+	this.cur_branch = "main";
+	this.branches = {
+	    "main": this.head,
+	};
+    }
+
+    commit(id) {
+	this.head = id;
+	this.branches[this.cur_branch] = this.head;
+    }
+
+    branch(name) {
+	if (name in this.branches) {
+	    throw Error("Already a branch with name '" + name + "'");
+	}
+	this.branches[name] = this.head;
+    }
+
+    merge(branch, id) {
+	if (!(branch in this.branches)) {
+	    throw Error("No branch with name '" + branch + "'");
+	}
+	this.branches[this.cur_branch] = id;
+    }
+
+    checkout(id) {
+	if (!(id in this.branches)) {
+	    throw Error("No branch with name '" + id + "'");
+	}
+        this.head = this.branches[id];
+	this.cur_branch = id;
     }
 }
 
@@ -465,6 +524,7 @@ class Git {
     constructor(code_element) {
         this.commands = [new Commit()];
         this.code = code_element;
+	this.actions = [];
     }
 
     commit() {
@@ -487,25 +547,27 @@ class Git {
         return this;
     }
 
-    graphDefinition(steps = Number.MAX_SAFE_INTEGER) {
+    run(steps = Number.MAX_SAFE_INTEGER) {
         if (steps >= this.commands.length) {
             steps = this.commands.length - 1;
-        }
-        var lastCommit = 0;
-        for (let i = 0; i <= steps; i++) {
-            if (this.commands[i].commit() != null) {
-                lastCommit = i;
-            }
-        }
-        var cur_commands = [];
-        for (let i = 0; i <= steps; i++) {
-            let actions = this.commands[i].actions(i == lastCommit);
-            cur_commands.push(...actions);
         }
         if (steps > 0) {
             this.code.innerHTML += "<br />$ " + this.commands[steps].command();
         }
-        return ["gitGraph TB:"].concat(cur_commands).join("\n");
+
+	this.actions = [];
+	var repo = new Repo();
+        for (let i = 0; i <= steps; i++) {
+	    this.commands[i].execute(repo);
+	}
+        for (let i = 0; i <= steps; i++) {
+            let actions = this.commands[i].actions(repo);
+	    this.actions.push(...actions);
+	}
+    }
+
+    graphDefinition() {
+        return ["gitGraph TB:"].concat(this.actions).join("\n");
     }
 }
 
@@ -546,7 +608,8 @@ class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
     onTransition() {
         var mermaid = MermaidSlide.getMermaid();
         var element = this.mermaidElement;
-        var graphDefinition = this.git.graphDefinition(this.count);
+	this.git.run(this.count);
+        var graphDefinition = this.git.graphDefinition();
 
         const drawDiagram = async function () {
             const { svg } = await mermaid.render("graphDiv", graphDefinition);
