@@ -1,9 +1,6 @@
 /* global GitgraphJS */
 /* global Reveal */
 
-/* global graphology */
-/* global Sigma */
-
 /* eslint no-unused-vars: "warn" */
 
 function sha1() {
@@ -318,55 +315,6 @@ class HeadSlide extends GitGraphSlide { // eslint-disable-line no-unused-vars
         case 7:
             this.bugFix.commit("One more fix");
             return false;
-        }
-    }
-}
-
-class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
-    constructor() {
-        super("graphology-slide");
-        const gctr = this.section.getElementsByClassName("git-container")[0];
-        this.code = gctr.getElementsByTagName("code")[0];
-        this.graph = new graphology.Graph({type: "directed"});
-    }
-
-    onShowSlide() {
-        super.onShowSlide();
-        this.enableTransitions(this.onTransition.bind(this));
-    }
-
-    onHideSlide() {
-        this.sigmaInstance.kill();
-        super.onHideSlide();
-    }
-
-    onResetSlide() {
-        super.onResetSlide();
-        this.graph.clear();
-        this.count = 0;
-
-        this.code.innerHTML = "$ git checkout main";
-        this.graph.addNode("1a1a9bf", {
-            label: "1a1a9bf Initial commit",
-            x: 0, y: 2, size: 15, color: "blue" });
-        this.graph.addNode("5f68664", {
-            label: "5f68664 Add shooter",
-            x: 0, y: 1, size: 15, color: "blue" });
-        this.graph.addEdge("5f68664", "1a1a9bf", { size: 5, color: "black", type: "arrow" });
-        this.sigmaInstance = new Sigma(this.graph, this.section.getElementsByClassName("sigma-container")[0]);
-    }
-
-    onTransition() {
-        switch (++this.count) {
-        case 1:
-            this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
-            this.graph.addNode("6e04e30", { label: "6e04e30 Add shooter", x: 0, y: 0, size: 10, color: "red" });
-            this.graph.addEdge("5f68664", "6e04e30", { size: 5, color: "purple" });
-            return true;
-        case 2:
-            return false; // No more transitions
         }
     }
 }
