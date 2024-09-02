@@ -495,12 +495,13 @@ class Git {
         return this;
     }
 
-    run(steps = Number.MAX_SAFE_INTEGER) {
+    run(code_element, steps = Number.MAX_SAFE_INTEGER) {
         if (steps >= this.commands.length) {
             steps = this.commands.length - 1;
         }
         if (steps > 0) {
-            this.code.innerHTML += "<br />$ " + this.commands[steps].command();
+            let cur_command = this.commands[steps];
+            code_element.innerHTML += "<br />$ " + cur_command.command();
         }
 
         this.actions = [];
@@ -519,9 +520,7 @@ class Git {
     }
 }
 
-class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class MermaidSlide extends Slide {
     static setMermaid(mermaid) {
         this.mermaid = mermaid;
     }
@@ -530,33 +529,32 @@ class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
         return this.mermaid;
     }
 
-    constructor() {
-        super("mermaid-slide");
-        this.mermaidElement = this.section.getElementsByClassName("mermaid")[0];
-        this.code = this.section.getElementsByTagName("code")[0];
+    constructor(sectionId) {
+        super(sectionId);
     }
 
     onShowSlide() {
+        this.code = this.section.getElementsByTagName("code")[0];
         super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
 
-    onResetSlide() {
-        super.onResetSlide();
-        this.count = 0;
+    record() {}
 
+    onResetSlide() {
+        this.mermaidElement = this.section.getElementsByClassName("mermaid")[0];
+        this.count = 0;
         this.code.innerHTML = "$ git checkout main";
         this.git = new Git(this.code);
-        this.git.commit().checkout("develop", true);
-        this.git.commit().commit().checkout("main");
-        this.git.merge("develop").commit().commit();
+        this.record();
         this.onTransition();
     }
 
     onTransition() {
         var mermaid = MermaidSlide.getMermaid();
         var element = this.mermaidElement;
-        this.git.run(this.count);
+        var code = this.section.getElementsByTagName("code")[0];
+        this.git.run(code, this.count);
         var graphDefinition = this.git.graphDefinition();
 
         const drawDiagram = async function () {
@@ -567,5 +565,19 @@ class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
         drawDiagram().then(() => {});
 
         return this.count++ < this.git.commands.length - 1;
+    }
+}
+
+class MermaidDemoSlide extends MermaidSlide {  // eslint-disable-line no-unused-vars
+    static { Slide.derived.add(this); }
+
+    constructor() {
+        super("mermaid-slide");
+    }
+
+    record() {
+        this.git.commit().checkout("develop", true);
+        this.git.commit().commit().checkout("main");
+        this.git.merge("develop").commit().commit();
     }
 }
