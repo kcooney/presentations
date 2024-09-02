@@ -346,7 +346,7 @@ class Commit extends GitCommand {
     }
 
     execute(repo) {
-	repo.commit(this.sha1);
+        repo.commit(this.sha1);
     }
 
     actions(repo) {
@@ -371,10 +371,10 @@ class Checkout extends GitCommand {
     }
 
     execute(repo) {
-	if (this.create) {
-	    repo.branch(this.branch);
-	}
-	repo.checkout(this.branch);
+        if (this.create) {
+            repo.branch(this.branch);
+        }
+        repo.checkout(this.branch);
     }
 
     command() {
@@ -402,7 +402,7 @@ class Branch extends GitCommand {
     }
 
     execute(repo) {
-	repo.branch(this.branch);
+        repo.branch(this.branch);
     }
 
     actions(repo) { // eslint-disable-line no-unused-vars
@@ -419,7 +419,7 @@ class Merge extends GitCommand {
     }
 
     execute(repo) {
-	repo.merge(this.branch, this.sha1);
+        repo.merge(this.branch, this.sha1);
     }
 
     actions(repo) {
@@ -433,38 +433,38 @@ class Merge extends GitCommand {
 
 class Repo {
     constructor() {
-	this.head = sha1();
-	this.cur_branch = "main";
-	this.branches = {
-	    "main": this.head,
-	};
+        this.head = sha1();
+        this.cur_branch = "main";
+        this.branches = {
+            "main": this.head,
+        };
     }
 
     commit(id) {
-	this.head = id;
-	this.branches[this.cur_branch] = this.head;
+        this.head = id;
+        this.branches[this.cur_branch] = this.head;
     }
 
     branch(name) {
-	if (name in this.branches) {
-	    throw Error("Already a branch with name '" + name + "'");
-	}
-	this.branches[name] = this.head;
+        if (name in this.branches) {
+            throw Error("Already a branch with name '" + name + "'");
+        }
+        this.branches[name] = this.head;
     }
 
     merge(branch, id) {
-	if (!(branch in this.branches)) {
-	    throw Error("No branch with name '" + branch + "'");
-	}
-	this.branches[this.cur_branch] = id;
+        if (!(branch in this.branches)) {
+            throw Error("No branch with name '" + branch + "'");
+        }
+        this.branches[this.cur_branch] = id;
     }
 
     checkout(id) {
-	if (!(id in this.branches)) {
-	    throw Error("No branch with name '" + id + "'");
-	}
+        if (!(id in this.branches)) {
+            throw Error("No branch with name '" + id + "'");
+        }
         this.head = this.branches[id];
-	this.cur_branch = id;
+        this.cur_branch = id;
     }
 }
 
@@ -472,7 +472,7 @@ class Git {
     constructor(code_element) {
         this.commands = [new Commit()];
         this.code = code_element;
-	this.actions = [];
+        this.actions = [];
     }
 
     commit() {
@@ -503,15 +503,15 @@ class Git {
             this.code.innerHTML += "<br />$ " + this.commands[steps].command();
         }
 
-	this.actions = [];
-	var repo = new Repo();
+        this.actions = [];
+        var repo = new Repo();
         for (let i = 0; i <= steps; i++) {
-	    this.commands[i].execute(repo);
-	}
+            this.commands[i].execute(repo);
+        }
         for (let i = 0; i <= steps; i++) {
             let actions = this.commands[i].actions(repo);
-	    this.actions.push(...actions);
-	}
+            this.actions.push(...actions);
+        }
     }
 
     graphDefinition() {
@@ -556,7 +556,7 @@ class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
     onTransition() {
         var mermaid = MermaidSlide.getMermaid();
         var element = this.mermaidElement;
-	this.git.run(this.count);
+        this.git.run(this.count);
         var graphDefinition = this.git.graphDefinition();
 
         const drawDiagram = async function () {
@@ -564,7 +564,7 @@ class MermaidSlide extends Slide { // eslint-disable-line no-unused-vars
             element.innerHTML = svg;
         };
 
-	drawDiagram().then(() => {});
+        drawDiagram().then(() => {});
 
         return this.count++ < this.git.commands.length - 1;
     }
