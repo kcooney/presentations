@@ -4,25 +4,18 @@
     <title>Branching in Git</title>
     <link rel="icon" href="favicon.ico">
     <!-- Reveal.js -->
-    <link rel="stylesheet" href="../reveal.js/dist/reset.css">
-    <link rel="stylesheet" href="../reveal.js/dist/reveal.css">
-    <link rel="stylesheet" href="../reveal.js/dist/theme/simple.css">
+    <link rel="stylesheet" href="reveal-js/dist/reset.css">
+    <link rel="stylesheet" href="reveal-js/dist/reveal.css">
+    <link rel="stylesheet" href="reveal-js/dist/theme/simple.css">
     <!-- Theme used for syntax highlighted code -->
-    <link rel="stylesheet" href="../reveal.js/plugin/highlight/monokai.css">
-    <script src="../reveal.js/dist/reveal.js"></script>
-    <script src="../reveal.js/plugin/markdown/markdown.js"></script>
+    <link rel="stylesheet" href="reveal-js/plugin/highlight/monokai.css">
+    <script type="module" src="reveal-js/dist/reveal.esm.js"></script>
+    <script type="moduoe" src="reveal-js/plugin/markdown/markdown.js"></script>
 
     <!-- gitgraph-js  -->
     <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
 
-    <script src="./slides.js"></script>
-
-    <!-- Mermaid; https://mermaid.js.org/ -->
-    <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-      mermaid.initialize({ startOnLoad: true });
-      MermaidSlide.setMermaid(mermaid);
-    </script>
+    <script type="module" src="./slides.js"></script>
 
     <style>
       .reveal h2 {
@@ -177,17 +170,5 @@
 	</section>
       </div>
     </div>
-
-    <script>
-      Reveal.initialize({
-	  plugins: [ RevealMarkdown ],
-	  width: 1160,
-	  keyboard: {
-	      13: 'next',
-	  },
-	  markdown: {
-	  },
-      });
-    </script>
   </body>
 </html>
