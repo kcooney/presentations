@@ -12,13 +12,13 @@ function sha1() {
 
 export class Git {
     constructor(code_element) {
-        this.commands = [new Commit()];
+        this.commands = [new Commit("Initial commit message")];
         this.code = code_element;
         this.actions = [];
     }
 
-    commit() {
-        this.commands.push(new Commit());
+    commit(msg, reverse = false) {
+        this.commands.push(new Commit(msg, reverse));
         return this;
     }
 
@@ -58,7 +58,7 @@ export class Git {
     }
 
     graphDefinition() {
-        return ["gitGraph TB:"].concat(this.actions).join("\n");
+        return ["gitGraph TB:"].concat(this.actions).join("\n   ") + "\n";
     }
 }
 
@@ -83,9 +83,22 @@ class GitCommand {
 
 class Commit extends GitCommand {
 
-    constructor() {
-        super("git commit");
-        this.sha1 = sha1();
+    constructor(msg, reverse=false) {
+        super("");
+        this.msg = msg;
+        if (msg) {
+            this.sha1 = msg;
+        } else {
+            this.sha1 = sha1();
+        }
+        this.reverse = reverse
+    }
+
+    command() {
+        if (this.msg) {
+            return "git commit -m '" + this.msg + "'";
+        }
+        return "git commit"
     }
 
     execute(repo) {
@@ -93,9 +106,11 @@ class Commit extends GitCommand {
     }
 
     actions(repo) {
-        var action = 'commit id: "' + this.sha1 + '"';
+        var action = 'commit id:"' + this.sha1 + '"';
         if (repo.head == this.sha1) {
-            action += " type: HIGHLIGHT";
+            action += " type:HIGHLIGHT";
+        } else if (this.reverse) {
+            action += " type:REVERSE";
         }
         return [action];
     }

@@ -1,8 +1,6 @@
-/* eslint no-unused-vars: "warn" */
-
 import { Git } from "./git.js";
 import Reveal from '../reveal-js/dist/reveal.esm.js';
-import Markdown from '../reveal-js/plugin/markdown/markdown.esm.js';  // eslint-disable-line no-unused-vars
+import Markdown from '../reveal-js/plugin/markdown/markdown.esm.js';
 
 // Mermaid; https://mermaid.js.org/
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';

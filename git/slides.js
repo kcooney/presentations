@@ -1,9 +1,6 @@
 /* global GitgraphJS */
 
-import { Git } from "./modules/git.js";
 import { Slide, MermaidSlide } from "./modules/slide.js";
-
-/* eslint no-unused-vars: "warn" */
 
 const baseTemplate = GitgraphJS.TemplateName.BlackArrow;
 const withoutAuthor = GitgraphJS.templateExtend(baseTemplate, {
@@ -63,44 +60,19 @@ class GitGraphSlide extends Slide {
     }
 }
 
-class CommittingSlide extends GitGraphSlide {  // eslint-disable-line no-unused-vars
+class CommittingSlide extends MermaidSlide {  // eslint-disable-line no-unused-vars
     static { Slide.derived.add(this); }
 
     count = 0;
 
     constructor() {
         super("committing-slide");
-        const gctr = this.section.getElementsByClassName("git-container")[0];
-        this.code = gctr.getElementsByTagName("code")[0];
     }
 
-    onShowSlide() {
-        super.onShowSlide();
-        this.enableTransitions(this.onTransition.bind(this));
-    }
-
-    onResetSlide() {
-        super.onResetSlide();
-        this.count = 0;
-
-        this.code.innerHTML = "$ git checkout main";
-    }
-
-    onTransition() {
-        switch (++this.count) {
-        case 1:
-            this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
-            this.gitgraph.commit("Add shooter");
-            return true;
-        case 2:
-            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
-            this.gitgraph.commit("Shoot faster");
-            return true;
-        case 3:
-            this.code.innerHTML += "<br />$ git commit -m 'Revert shoot faster'";
-            this.gitgraph.commit("Revert shoot faster");
-            return false; // No more transitions
-        }
+    record() {
+        this.git.commit("Add shooter").commit("Shoot faster");
+	this.git.commit("Revert shoot faster", true);
+	this.git.commit("Use gyro");
     }
 }
 
