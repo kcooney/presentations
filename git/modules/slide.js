@@ -105,6 +105,7 @@ Reveal.on("ready", (event) => {
 Reveal.initialize({
     plugins: [ Markdown ],
     width: 1160,
+    center: false,
     keyboard: {
         13: 'next',
     },
