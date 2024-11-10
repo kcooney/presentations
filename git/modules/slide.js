@@ -5,7 +5,7 @@ import Markdown from '../reveal-js/plugin/markdown/markdown.esm.js';
 // Mermaid; https://mermaid.js.org/
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
-mermaid.initialize({ startOnLoad: true });
+mermaid.initialize({ startOnLoad: false });
 
 const rightArrowKey = 39;
 const leftArrowKey = 37;
