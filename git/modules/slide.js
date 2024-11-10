@@ -48,7 +48,11 @@ export class MermaidSlide extends Slide {
     }
 
     onShowSlide() {
-        this.code = this.section.getElementsByTagName("code")[0];
+        var container = this.section.getElementsByClassName("git-container")[0];
+        container.style.display = "block";
+
+        this.code = container.getElementsByTagName("code")[0];
+        this.mermaidElement = container.getElementsByClassName("mermaid")[0];
         super.onShowSlide();
         this.enableTransitions(this.onTransition.bind(this));
     }
@@ -56,7 +60,6 @@ export class MermaidSlide extends Slide {
     record() {}
 
     onResetSlide() {
-        this.mermaidElement = this.section.getElementsByClassName("mermaid")[0];
         this.count = 0;
         this.code.innerHTML = "$ git checkout main";
         this.git = new Git(this.code);
