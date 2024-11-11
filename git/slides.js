@@ -71,8 +71,8 @@ class CommittingSlide extends MermaidSlide {  // eslint-disable-line no-unused-v
 
     record() {
         this.git.commit("Add shooter").commit("Shoot faster");
-	this.git.commit("Revert shoot faster", true);
-	this.git.commit("Use gyro");
+        this.git.commit("Revert shoot faster", true);
+        this.git.commit("Use gyro");
     }
 }
 
