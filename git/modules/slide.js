@@ -1,4 +1,4 @@
-import { Git } from "./git.js";
+import { Git, Repo } from "./git.js";
 import Reveal from '../reveal-js/dist/reveal.esm.js';
 import Markdown from '../reveal-js/plugin/markdown/markdown.esm.js';
 
@@ -95,7 +95,7 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
 
     constructor() {
         super("graphology-slide");
-        this.graph = new graphology.Graph({type: "directed", allowSelfLoops: false});
+        this.graph = new graphology.Graph({type: "directed", allowSelfLoops: false}); // eslint-disable-line no-undef
     }
 
     onShowSlide() {
@@ -111,21 +111,33 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
         super.onHideSlide();
     }
 
+    addNode() {
+        var head = this.repo.head;
+        this.graph.addNode(head.sha1, {
+            label: head.sha1 + " " + head.msg,
+            x: 0, y: this.pos, size: 15, color: "blue" });
+        this.pos -= 15;
+        if (head.parents.length > 0) {
+            this.graph.addEdge(head.sha1, head.parents[0].sha1, {
+                size: 5, color: "black", type: "arrow" });
+        }
+    }
+
     onResetSlide() {
         super.onResetSlide();
         this.graph.clear();
         this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
-	this.graph.addNode("tr", {x: 100, y: 100, size: 0, hidden: true});
-	this.graph.addNode("br", {x: 100, y: 0, size: 0, hidden: true});
-        this.graph.addNode("1a1a9bf", {
-            label: "1a1a9bf Initial commit",
-            x: 0, y: 100, size: 15, color: "blue" });
-        this.graph.addNode("5f68664", {
-            label: "5f68664 Add motors",
-            x: 0, y: 85, size: 15, color: "red" });
-        this.graph.addEdge("5f68664", "1a1a9bf", { size: 5, color: "black", type: "arrow" });
+        this.graph.addNode("tr", {x: 100, y: 100, size: 0, hidden: true});
+        this.graph.addNode("br", {x: 100, y: 0, size: 0, hidden: true});
+        this.pos = 100;
+
+        this.repo = new Repo();
+        this.addNode();
+        this.repo.commit("Add motors");
+        this.addNode();
+
         this.sigmaInstance = new Sigma(this.graph, this.section.getElementsByClassName("sigma-container")[0]);
     }
 
@@ -133,11 +145,15 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
-            this.graph.addNode("6e04e30", { label: "6e04e30 Add shooter", x: 0, y: 70, size: 15, color: "blue" });
-            this.graph.addEdge("6e04e30", "5f68664", { size: 5, color: "black", type: "arrow" });
-	    this.sigmaInstance.refresh();
+            this.repo.commit("Add shooter");
+            this.addNode();
+            this.sigmaInstance.refresh();
             return true;
         case 2:
+            this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
+            this.repo.commit("Shooter faster");
+            this.addNode();
+            this.sigmaInstance.refresh();
             return false; // No more transitions
         }
     }

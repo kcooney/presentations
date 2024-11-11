@@ -12,28 +12,28 @@ function sha1() {
 
 export class Git {
     constructor(code_element) {
-        this.commands = [new Commit("Initial commit message")];
+        this.commands = [new CommitCommand("Initial commit message")];
         this.code = code_element;
         this.actions = [];
     }
 
     commit(msg, reverse = false) {
-        this.commands.push(new Commit(msg, reverse));
+        this.commands.push(new CommitCommand(msg, reverse));
         return this;
     }
 
     branch(name) {
-        this.commands.push(new Branch(name));
+        this.commands.push(new BranchCommand(name));
         return this;
     }
 
     checkout(branch, create = false) {
-        this.commands.push(new Checkout(branch, create));
+        this.commands.push(new CheckoutCommand(branch, create));
         return this;
     }
 
     merge(branch) {
-        this.commands.push(new Merge(branch));
+        this.commands.push(new MergeCommand(branch));
         return this;
     }
 
@@ -81,16 +81,11 @@ class GitCommand {
     }
 }
 
-class Commit extends GitCommand {
+class CommitCommand extends GitCommand {
 
     constructor(msg, reverse=false) {
         super("");
         this.msg = msg;
-        if (msg) {
-            this.sha1 = msg;
-        } else {
-            this.sha1 = sha1();
-        }
         this.reverse = reverse
     }
 
@@ -102,11 +97,15 @@ class Commit extends GitCommand {
     }
 
     execute(repo) {
-        repo.commit(this.sha1);
+        this.sha1 = repo.commit(this.msg).sha1;
     }
 
     actions(repo) {
-        var action = 'commit id:"' + this.sha1 + '"';
+        var id = this.sha1;
+        if (this.msg) {
+            id = this.msg;
+        }
+        var action = 'commit id:"' + id + '"';
         if (repo.head == this.sha1) {
             action += " type:HIGHLIGHT";
         } else if (this.reverse) {
@@ -120,7 +119,7 @@ class Commit extends GitCommand {
     }
 }
 
-class Checkout extends GitCommand {
+class CheckoutCommand extends GitCommand {
 
     constructor(branch, create = false) {
         super("");
@@ -152,7 +151,7 @@ class Checkout extends GitCommand {
     }
 }
 
-class Branch extends GitCommand {
+class BranchCommand extends GitCommand {
 
     constructor(name) {
         super("git branch " + name);
@@ -168,7 +167,7 @@ class Branch extends GitCommand {
     }
 }
 
-class Merge extends GitCommand {
+class MergeCommand extends GitCommand {
 
     constructor(branch) {
         super("git merge " + name);
@@ -189,18 +188,33 @@ class Merge extends GitCommand {
     }
 }
 
-class Repo {
+class Commit {
+    constructor(msg) {
+        this.msg = msg;
+        this.sha1 = sha1();
+        this.parents = [];
+    }
+
+    addParent(commit) {
+        this.parents.push(commit);
+    }
+}
+
+export class Repo {
     constructor() {
-        this.head = sha1();
+        this.head = new Commit("First commit");
         this.cur_branch = "main";
         this.branches = {
             "main": this.head,
         };
     }
 
-    commit(id) {
-        this.head = id;
+    commit(msg) {
+        var c = new Commit(msg);
+        c.addParent(this.head);
+        this.head = c;
         this.branches[this.cur_branch] = this.head;
+        return c;
     }
 
     branch(name) {
@@ -210,11 +224,13 @@ class Repo {
         this.branches[name] = this.head;
     }
 
-    merge(branch, id) {
+    merge(branch) {
         if (!(branch in this.branches)) {
             throw Error("No branch with name '" + branch + "'");
         }
-        this.branches[this.cur_branch] = id;
+        var c = this.commit("Merge " + branch);
+        c.addParent(this.branches[branch]);
+        return c;
     }
 
     checkout(id) {
