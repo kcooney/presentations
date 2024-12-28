@@ -37,44 +37,65 @@ export class Git {
         return this;
     }
 
-    run(code_element, steps = Number.MAX_SAFE_INTEGER) {
-        if (steps >= this.commands.length) {
-            steps = this.commands.length - 1;
-        }
-        if (steps > 0) {
-            let cur_command = this.commands[steps];
-            code_element.innerHTML += "<br />$ " + cur_command.command();
-        }
-
-        this.actions = [];
+    execute(steps = Number.MAX_SAFE_INTEGER) {
+        var max = Math.min(steps, this.commands.length - 1);
+        // We always execute the first step (the initial commit).
         var repo = new Repo();
-        for (let i = 0; i <= steps; i++) {
-            this.commands[i].execute(repo);
+        for (let i = 0; i <= max; i++) {
+            var command = this.commands[i];
+            command.execute(repo);
         }
-        for (let i = 0; i <= steps; i++) {
-            let actions = this.commands[i].actions(repo);
-            this.actions.push(...actions);
-        }
+        return repo;
     }
 
-    graphDefinition() {
-        return ["gitGraph TB:"].concat(this.actions).join("\n   ") + "\n";
+    visit(visitor, steps = Number.MAX_SAFE_INTEGER) {
+        var max = Math.min(steps, this.commands.length - 1);
+        for (let i = 0; i <= max; i++) {
+            var command = this.commands[i];
+            visitor.visit(command);
+            command.visit(visitor);
+        }
     }
 }
 
 class GitCommand {
 
-    constructor(command) {
-        this.git_command = command;
+    /**
+     * @param {string} command Git command line that this command represents.
+     */
+    constructor() {
+        /** @protected {?string} */
+        this.sha1_ = null;
     }
 
-    execute(repo) {} // eslint-disable-line no-unused-vars
+    sha1() {
+        if (this.sha1_ == null) {
+            throw Error("Cannot call sha1() before execute()")
+        }
+        return this.sha1_;
+    }
+
+    /**
+     * @param {!Repo} repo
+     */
+    execute(repo) {
+        this.execute_(repo);
+        this.sha1_ = repo.head.sha1;
+    }
+
+    /**
+     * @param {!Repo} repo
+     */
+    execute_(repo) {} // eslint-disable-line no-unused-vars
 
     command() {
-        return this.git_command;
+        throw Error("Not implemented");
     }
 
-    actions(repo) {} // eslint-disable-line no-unused-vars
+    /**
+     * @param {!GitCommandVisitor} visitor
+     */
+    visit(visitor) {} // eslint-disable-line no-unused-vars
 
     commit() {
         return null;
@@ -83,35 +104,29 @@ class GitCommand {
 
 class CommitCommand extends GitCommand {
 
-    constructor(msg, reverse=false) {
-        super("");
+    constructor(msg, reverse = false) {
+        super();
         this.msg = msg;
-        this.reverse = reverse
+        this.reverse = reverse;
     }
 
     command() {
         if (this.msg) {
             return "git commit -m '" + this.msg + "'";
         }
-        return "git commit"
+        return "git commit";
     }
 
-    execute(repo) {
-        this.sha1 = repo.commit(this.msg).sha1;
+    execute_(repo) {
+        repo.commit(this.msg);
     }
 
-    actions(repo) {
-        var id = this.sha1;
-        if (this.msg) {
-            id = this.msg;
-        }
-        var action = 'commit id:"' + id + '"';
-        if (repo.head == this.sha1) {
-            action += " type:HIGHLIGHT";
-        } else if (this.reverse) {
-            action += " type:REVERSE";
-        }
-        return [action];
+    /**
+     * @param {!GitCommandVisitor} visitor
+     * @override
+     */
+    visit(visitor) {
+        visitor.visitCommit(this);
     }
 
     commit() {
@@ -127,7 +142,7 @@ class CheckoutCommand extends GitCommand {
         this.create = create;
     }
 
-    execute(repo) {
+    execute_(repo) {
         if (this.create) {
             repo.branch(this.branch);
         }
@@ -141,51 +156,77 @@ class CheckoutCommand extends GitCommand {
         return "git checkout " + this.branch;
     }
 
-    actions(repo) { // eslint-disable-line no-unused-vars
-        var a = [];
-        if (this.create) {
-            a.push("branch " + this.branch);
-        }
-        a.push("checkout " + this.branch);
-        return a;
+    visit(visitor) {
+        visitor.visitCheckout(this);
     }
 }
 
 class BranchCommand extends GitCommand {
 
     constructor(name) {
-        super("git branch " + name);
+        super();
         this.branch = name;
     }
 
-    execute(repo) {
+    command() {
+        return "git branch " + this.branch;
+    }
+
+    execute_(repo) {
         repo.branch(this.branch);
     }
 
-    actions(repo) { // eslint-disable-line no-unused-vars
-        return ["branch " + this.branch];
+    visit(visitor) {
+        visitor.visitBranch(this);
     }
 }
 
 class MergeCommand extends GitCommand {
 
     constructor(branch) {
-        super("git merge " + name);
+        super();
         this.branch = branch;
-        this.sha1 = sha1();
     }
 
-    execute(repo) {
-        repo.merge(this.branch, this.sha1);
+    command() {
+        return "git merge " + this.branch;
     }
 
-    actions(repo) {
-        var action = 'merge ' + this.branch + ' id: "' + this.sha1 + '"';
-        if (repo.head == this.sha1) {
-            action += ' type: HIGHLIGHT';
-        }
-        return [action];
+    execute_(repo) {
+        repo.merge(this.branch);
     }
+
+    visit(visitor) {
+        visitor.visitMerge(this);
+    }
+}
+
+export class GitCommandVisitor {
+
+    /**
+     * @param {!GitCommand} command
+     */
+    visit(command) {} // eslint-disable-line no-unused-vars
+
+    /**
+     * @param {!CommitCommand} command
+     */
+    visitCommit(command) {} // eslint-disable-line no-unused-vars
+
+    /**
+     * @param {!CheckoutCommand} command
+     */
+    visitCheckout(command) {} // eslint-disable-line no-unused-vars
+
+    /**
+     * @param {!BranchCommand} command
+     */
+    visitBranch(command) {} // eslint-disable-line no-unused-vars
+
+    /**
+     * @param {!MergeCommand} command
+     */
+    visitMerge(command) {} // eslint-disable-line no-unused-vars
 }
 
 class Commit {
@@ -193,10 +234,12 @@ class Commit {
         this.msg = msg;
         this.sha1 = sha1();
         this.parents = [];
+        this.children = [];
     }
 
     addParent(commit) {
         this.parents.push(commit);
+        commit.children.push(new WeakRef(this));
     }
 }
 

@@ -1,4 +1,4 @@
-import { Git, Repo } from "./git.js";
+import { Git, GitCommandVisitor, Repo } from "./git.js";
 import Reveal from '../reveal-js/dist/reveal.esm.js';
 import Markdown from '../reveal-js/plugin/markdown/markdown.esm.js';
 
@@ -48,6 +48,63 @@ export class Slide {
     }
 }
 
+class MermaidGitCommandVisitor extends GitCommandVisitor {
+
+    /**
+     * @param {string} head The sha1 of the head commit.
+     */
+    constructor(head) {
+        super();
+        this.head = head;
+        this.actions = [];
+        /** {?string} */
+        this.last_command = null;
+    }
+
+    visit(command) {
+        this.last_command = command.command();
+    }
+
+    visitCommit(command) {
+        var sha1 = command.sha1();
+        var id = sha1;
+        if (command.msg) {
+            id = command.msg;
+        }
+        var action = 'commit id:"' + id + '"';
+        if (this.head.sha1 == sha1) {
+            action += " type:HIGHLIGHT";
+        } else if (this.reverse) {
+            action += " type:REVERSE";
+        }
+        this.actions.push(action);
+    }
+
+    visitCheckout(command) {
+        if (command.create) {
+            this.actions.push("branch " + command.branch);
+        }
+        this.actions.push("checkout " + command.branch);
+    }
+
+    visitBranch(command) {
+        this.actions.push("branch " + command.branch);
+    }
+
+    visitMerge(command) {
+        var sha1 = command.sha1();
+        var action = 'merge ' + command.branch + ' id: "' + sha1 + '"';
+        if (this.head.sha1 == sha1) {
+            action += ' type: HIGHLIGHT';
+        }
+        this.actions.push(action);
+    }
+
+    graphDefinition() {
+        return ["gitGraph TB:"].concat(this.actions).join("\n   ") + "\n";
+    }
+}
+
 export class MermaidSlide extends Slide {
     constructor(sectionId) {
         super(sectionId);
@@ -75,9 +132,14 @@ export class MermaidSlide extends Slide {
 
     onTransition() {
         var element = this.mermaidElement;
-        var code = this.section.getElementsByTagName("code")[0];
-        this.git.run(code, this.count);
-        var graphDefinition = this.git.graphDefinition();
+        var repo = this.git.execute(this.count);
+        var visitor = new MermaidGitCommandVisitor(repo.head);
+        this.git.visit(visitor, this.count);
+        if (visitor.last_command != null) {
+            var code = this.section.getElementsByTagName("code")[0];
+            code.innerHTML += "<br />$ " + visitor.last_command;
+        }
+        var graphDefinition = visitor.graphDefinition();
 
         const drawDiagram = async function () {
             const { svg } = await mermaid.render("graphDiv", graphDefinition);
