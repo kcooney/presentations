@@ -1,4 +1,5 @@
 /* eslint no-unused-vars: "warn" */
+"use strict";
 
 function sha1() {
     let result = '';
@@ -10,11 +11,15 @@ function sha1() {
     return result;
 }
 
+let nextTick = 1;
+
+function fakeTime() {
+    return nextTick++;
+}
+
 export class Git {
-    constructor(code_element) {
-        this.commands = [new CommitCommand("Initial commit message")];
-        this.code = code_element;
-        this.actions = [];
+    constructor() {
+        this.commands = [];
     }
 
     commit(msg, reverse = false) {
@@ -38,10 +43,9 @@ export class Git {
     }
 
     execute(steps = Number.MAX_SAFE_INTEGER) {
-        var max = Math.min(steps, this.commands.length - 1);
-        // We always execute the first step (the initial commit).
+        steps = Math.min(steps, this.commands.length);
         var repo = new Repo();
-        for (let i = 0; i <= max; i++) {
+        for (let i = 0; i < steps; i++) {
             var command = this.commands[i];
             command.execute(repo);
         }
@@ -49,8 +53,8 @@ export class Git {
     }
 
     visit(visitor, steps = Number.MAX_SAFE_INTEGER) {
-        var max = Math.min(steps, this.commands.length - 1);
-        for (let i = 0; i <= max; i++) {
+        steps = Math.min(steps, this.commands.length);
+        for (let i = 0; i < steps; i++) {
             var command = this.commands[i];
             visitor.visit(command);
             command.visit(visitor);
@@ -235,6 +239,7 @@ class Commit {
         this.sha1 = sha1();
         this.parents = [];
         this.children = [];
+        this.commitTime = fakeTime();
     }
 
     addParent(commit) {

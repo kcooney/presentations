@@ -125,16 +125,17 @@ export class MermaidSlide extends Slide {
     onResetSlide() {
         this.count = 0;
         this.code.innerHTML = "$ git checkout main";
-        this.git = new Git(this.code);
+        this.git = new Git();
+        this.git.commit("Initial commit message");
         this.record();
         this.onTransition();
     }
 
     onTransition() {
         var element = this.mermaidElement;
-        var repo = this.git.execute(this.count);
+        var repo = this.git.execute(this.count + 1);
         var visitor = new MermaidGitCommandVisitor(repo.head);
-        this.git.visit(visitor, this.count);
+        this.git.visit(visitor, this.count + 1);
         if (visitor.last_command != null) {
             var code = this.section.getElementsByTagName("code")[0];
             code.innerHTML += "<br />$ " + visitor.last_command;
