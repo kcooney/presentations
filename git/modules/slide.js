@@ -115,7 +115,10 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
         var head = this.repo.head;
         this.graph.addNode(head.sha1, {
             label: head.sha1 + " " + head.msg,
-            x: 0, y: this.pos, size: 15, color: "blue" });
+            forceLabel: true,
+            x: 8, y: this.pos,
+            size: 15,
+            color: "blue" });
         this.pos -= 15;
         if (head.parents.length > 0) {
             this.graph.addEdge(head.sha1, head.parents[0].sha1, {
@@ -130,7 +133,7 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
 
         this.code.innerHTML = "$ git checkout main";
         this.graph.addNode("tr", {x: 100, y: 100, size: 0, hidden: true});
-        this.graph.addNode("br", {x: 100, y: 0, size: 0, hidden: true});
+        this.graph.addNode("bl", {x: 0, y: 0, size: 0, hidden: true});
         this.pos = 100;
 
         this.repo = new Repo();
