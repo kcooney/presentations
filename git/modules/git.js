@@ -1,63 +1,76 @@
 /* eslint no-unused-vars: "warn" */
-"use strict";
+import * as random from "./random.js";
 
-function sha1() {
+function sha1(rand = Math.random) {
     let result = '';
     const characters = '0123456789abcdef';
     const charactersLength = characters.length;
     for (let i = 0; i < 7; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        result += characters.charAt(Math.floor(rand() * charactersLength));
     }
     return result;
 }
 
-let nextTick = 1;
-
-function fakeTime() {
-    return nextTick++;
-}
-
 export class Git {
-    constructor() {
+    constructor(seed) {
+        this.singleStepMode = false;
+        this.repo = new Repo(seed);
         this.commands = [];
+        this.queue_ = [[]];
+        this.recordRepo_ = new Repo(seed);
+    }
+
+    pause() {
+        if (this.queue_[this.queue_.length - 1].length) {
+            this.queue_.push([]);
+        }
     }
 
     commit(msg, reverse = false) {
-        this.commands.push(new CommitCommand(msg, reverse));
+        this.enqueue_(new CommitCommand(msg, reverse));
         return this;
     }
 
     branch(name) {
-        this.commands.push(new BranchCommand(name));
+        this.enqueue_(new BranchCommand(name));
         return this;
     }
 
     checkout(branch, create = false) {
-        this.commands.push(new CheckoutCommand(branch, create));
+        this.enqueue_(new CheckoutCommand(branch, create));
         return this;
     }
 
     merge(branch) {
-        this.commands.push(new MergeCommand(branch));
+        this.enqueue_(new MergeCommand(branch));
         return this;
+    }
+
+    run() {
+        let commands = this.queue_.shift();
+        if (!this.queue_.length) {
+            this.queue_.push([]);
+        }
+        commands.forEach(command => command.execute(this.repo));
+        this.commands.push(...commands);
+        return commands.length > 0;
     }
 
     execute(steps = Number.MAX_SAFE_INTEGER) {
         steps = Math.min(steps, this.commands.length);
-        var repo = new Repo();
+        let repo = new Repo();
         for (let i = 0; i < steps; i++) {
-            var command = this.commands[i];
+            let command = this.commands[i];
             command.execute(repo);
         }
         return repo;
     }
 
-    visit(visitor, steps = Number.MAX_SAFE_INTEGER) {
-        steps = Math.min(steps, this.commands.length);
-        for (let i = 0; i < steps; i++) {
-            var command = this.commands[i];
-            visitor.visit(command);
-            command.visit(visitor);
+    enqueue_(command) {
+        command.execute(this.recordRepo_);
+        this.queue_[this.queue_.length - 1].push(command);
+        if (this.singleStepMode) {
+            this.pause();
         }
     }
 }
@@ -130,6 +143,7 @@ class CommitCommand extends GitCommand {
      * @override
      */
     visit(visitor) {
+        visitor.visit(this);
         visitor.visitCommit(this);
     }
 
@@ -161,6 +175,7 @@ class CheckoutCommand extends GitCommand {
     }
 
     visit(visitor) {
+        visitor.visit(this);
         visitor.visitCheckout(this);
     }
 }
@@ -181,6 +196,7 @@ class BranchCommand extends GitCommand {
     }
 
     visit(visitor) {
+        visitor.visit(this);
         visitor.visitBranch(this);
     }
 }
@@ -201,6 +217,7 @@ class MergeCommand extends GitCommand {
     }
 
     visit(visitor) {
+        visitor.visit(this);
         visitor.visitMerge(this);
     }
 }
@@ -234,12 +251,12 @@ export class GitCommandVisitor {
 }
 
 class Commit {
-    constructor(msg) {
+    constructor(msg, sha1, commitTime) {
         this.msg = msg;
-        this.sha1 = sha1();
+        this.sha1 = sha1;
         this.parents = [];
         this.children = [];
-        this.commitTime = fakeTime();
+        this.commitTime = commitTime;
     }
 
     addParent(commit) {
@@ -249,8 +266,22 @@ class Commit {
 }
 
 export class Repo {
-    constructor() {
-        this.head = new Commit("First commit");
+    constructor(seed) {
+        if (typeof seed != "string") {
+            throw Error("Must pass a string into Repo()");
+        }
+
+        let rand = random.splitmix32(random.hash32(seed));
+        this.randSha1_ = () => {
+            return sha1(rand);
+        };
+
+        this.nextTick_ = 1;
+        this.fakeTime_ = () => {
+            return this.nextTick++;
+        };
+
+        this.head = new Commit("First commit", this.randSha1_(), this.fakeTime_());
         this.cur_branch = "main";
         this.branches = {
             "main": this.head,
@@ -258,7 +289,7 @@ export class Repo {
     }
 
     commit(msg) {
-        var c = new Commit(msg);
+        let c = new Commit(msg, this.randSha1_(), this.fakeTime_());
         c.addParent(this.head);
         this.head = c;
         this.branches[this.cur_branch] = this.head;
@@ -276,7 +307,7 @@ export class Repo {
         if (!(branch in this.branches)) {
             throw Error("No branch with name '" + branch + "'");
         }
-        var c = this.commit("Merge " + branch);
+        let c = this.commit("Merge " + branch);
         c.addParent(this.branches[branch]);
         return c;
     }

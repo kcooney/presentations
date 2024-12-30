@@ -71,7 +71,7 @@ class MermaidGitCommandVisitor extends GitCommandVisitor {
         if (command.msg) {
             id = command.msg;
         }
-        var action = 'commit id:"' + id + '"';
+        let action = 'commit id:"' + id + '"';
         if (this.head.sha1 == sha1) {
             action += " type:HIGHLIGHT";
         } else if (this.reverse) {
@@ -123,24 +123,29 @@ export class MermaidSlide extends Slide {
     record() {}
 
     onResetSlide() {
-        this.count = 0;
         this.code.innerHTML = "$ git checkout main";
-        this.git = new Git();
+        let seed = this.sectionId;
+        this.git = new Git(seed);
+        this.git.singleStepMode = true;
         this.git.commit("Initial commit message");
         this.record();
         this.onTransition();
     }
 
     onTransition() {
-        var element = this.mermaidElement;
-        var repo = this.git.execute(this.count + 1);
-        var visitor = new MermaidGitCommandVisitor(repo.head);
-        this.git.visit(visitor, this.count + 1);
+        if (!this.git.run()) {
+            return false;
+        }
+
+        let visitor = new MermaidGitCommandVisitor(this.git.repo.head);
+        this.git.commands.forEach(command => command.visit(visitor));
+
+        let element = this.mermaidElement;
         if (visitor.last_command != null) {
-            var code = this.section.getElementsByTagName("code")[0];
+            let code = this.section.getElementsByTagName("code")[0];
             code.innerHTML += "<br />$ " + visitor.last_command;
         }
-        var graphDefinition = visitor.graphDefinition();
+        let graphDefinition = visitor.graphDefinition();
 
         const drawDiagram = async function () {
             const { svg } = await mermaid.render("graphDiv", graphDefinition);
@@ -149,7 +154,7 @@ export class MermaidSlide extends Slide {
 
         drawDiagram().then(() => {});
 
-        return this.count++ < this.git.commands.length - 1;
+        return true;
     }
 }
 
@@ -199,7 +204,8 @@ class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
         this.graph.addNode("bl", {x: 0, y: 0, size: 0, hidden: true});
         this.pos = 100;
 
-        this.repo = new Repo();
+        let seed = this.sectionId;
+        this.repo = new Repo(seed);
         this.addNode();
         this.repo.commit("Add motors");
         this.addNode();

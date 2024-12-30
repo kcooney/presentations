@@ -11,6 +11,9 @@ export default [
           impliedStrict: true
         }
       }
+    },
+    rules: {
+      "vars-on-top": "error"
     }
   },
   pluginJs.configs.recommended,
