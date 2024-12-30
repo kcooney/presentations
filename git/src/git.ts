@@ -1,15 +1,4 @@
-/* eslint no-unused-vars: "warn" */
 import * as random from "./random.js";
-
-function sha1(rand: () => number): string {
-    let result = '';
-    const characters = '0123456789abcdef';
-    const charactersLength = characters.length;
-    for (let i = 0; i < 7; i++) {
-        result += characters.charAt(Math.floor(rand() * charactersLength));
-    }
-    return result;
-}
 
 export class Git {
     singleStepMode: boolean;
@@ -53,7 +42,7 @@ export class Git {
     }
 
     run() {
-        let commands = this.queue.shift();
+        const commands = this.queue.shift();
         if (!this.queue.length) {
             this.queue.push([]);
         }
@@ -90,13 +79,13 @@ abstract class GitCommand {
         this.sha1 = repo.head.sha1;
     }
 
-    protected abstract doExecute(repo: Repo): void;
+    protected abstract doExecute(_repo: Repo): void;
 
     command() {
         throw Error("Not implemented");
     }
 
-    visit(visitor: GitCommandVisitor) {} // eslint-disable-line no-unused-vars
+    visit(_visitor: GitCommandVisitor) {}
 }
 
 class CommitCommand extends GitCommand {
@@ -200,15 +189,15 @@ class MergeCommand extends GitCommand {
 
 export class GitCommandVisitor {
 
-    visit(command: GitCommand) {} // eslint-disable-line no-unused-vars
+    visit(_command: GitCommand) {}
 
-    visitCommit(command: CommitCommand) {} // eslint-disable-line no-unused-vars
+    visitCommit(_command: CommitCommand) {}
 
-    visitCheckout(command: CheckoutCommand) {} // eslint-disable-line no-unused-vars
+    visitCheckout(_command: CheckoutCommand) {}
 
-    visitBranch(command: BranchCommand) {} // eslint-disable-line no-unused-vars
+    visitBranch(_command: BranchCommand) {}
 
-    visitMerge(command: MergeCommand) {} // eslint-disable-line no-unused-vars
+    visitMerge(_command: MergeCommand) {}
 }
 
 class Commit {
@@ -230,30 +219,23 @@ class Commit {
     }
 }
 
+type Branches = {
+    [key: string]: Commit;
+};
+
 export class Repo {
     private _head: Commit;
+    private commits: Commit[];
     private curBranch: string;
-    private readonly randSha1: () => string;
-    private nextTick: number;
-    private readonly fakeTime: () => number;
-    private branches;
+    private readonly rand: random.Random;
+    private branches: Branches;
 
     constructor(seed: string) {
-        let rand = random.splitmix32(random.hash32(seed));
-        this.randSha1 = () => {
-            return sha1(rand);
-        };
-
-        this.nextTick = 1;
-        this.fakeTime = () => {
-            return this.nextTick++;
-        };
-
-        this._head = new Commit("First commit", this.randSha1(), this.fakeTime());
+        this.commits = []
+        this.rand = new random.SplitMix32(random.hash32(seed));
         this.curBranch = "main";
-        this.branches = {
-            "main": this.head,
-        };
+        this.branches = {};
+        this._commit("First commit")
     }
 
     get head() {
@@ -261,10 +243,18 @@ export class Repo {
     }
 
     commit(msg) {
-        let c = new Commit(msg, this.randSha1(), this.fakeTime());
-        c.addParent(this.head);
+        const prevHead = this._head;
+        const c = this._commit(msg);
+        c.addParent(prevHead);
+	return c;
+    }
+
+    private _commit(msg) {
+        const t = this.commits.length + 1;
+        const c = new Commit(msg, this.rand.nextHex(), t);
         this._head = c;
-        this.branches[this.curBranch] = this.head;
+        this.commits.push(c);
+        this.branches[this.curBranch] = c;
         return c;
     }
 
@@ -279,7 +269,7 @@ export class Repo {
         if (!(branch in this.branches)) {
             throw Error("No branch with name '" + branch + "'");
         }
-        let c = this.commit("Merge " + branch);
+        const c = this.commit("Merge " + branch);
         c.addParent(this.branches[branch]);
         return c;
     }

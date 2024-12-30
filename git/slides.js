@@ -60,9 +60,7 @@ class GitGraphSlide extends Slide {
     }
 }
 
-class CommittingSlide extends MermaidSlide {  // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class CommittingSlide extends MermaidSlide {
     count = 0;
 
     constructor() {
@@ -75,10 +73,9 @@ class CommittingSlide extends MermaidSlide {  // eslint-disable-line no-unused-v
         this.git.commit("Use gyro");
     }
 }
+Slide.derived.add(CommittingSlide);
 
-class BranchesSlide extends GitGraphSlide {  // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class BranchesSlide extends GitGraphSlide {
     count = 0;
 
     constructor() {
@@ -122,10 +119,9 @@ class BranchesSlide extends GitGraphSlide {  // eslint-disable-line no-unused-va
         }
     }
 }
+Slide.derived.add(BranchesSlide);
 
-class TaggingSlide extends GitGraphSlide { // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class TaggingSlide extends GitGraphSlide {
     count = 0;
 
     constructor() {
@@ -161,10 +157,9 @@ class TaggingSlide extends GitGraphSlide { // eslint-disable-line no-unused-vars
         }
     }
 }
+Slide.derived.add(TaggingSlide);
 
-class HeadSlide extends GitGraphSlide { // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class HeadSlide extends GitGraphSlide {
     count = 0;
 
     constructor() {
@@ -227,10 +222,9 @@ class HeadSlide extends GitGraphSlide { // eslint-disable-line no-unused-vars
         }
     }
 }
+Slide.derived.add(HeadSlide);
 
-class MermaidDemoSlide extends MermaidSlide {  // eslint-disable-line no-unused-vars
-    static { Slide.derived.add(this); }
-
+class MermaidDemoSlide extends MermaidSlide {
     constructor() {
         super("mermaid-slide");
     }
@@ -241,3 +235,4 @@ class MermaidDemoSlide extends MermaidSlide {  // eslint-disable-line no-unused-
         this.git.merge("develop").commit().commit();
     }
 }
+Slide.derived.add(MermaidDemoSlide);

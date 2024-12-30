@@ -158,7 +158,7 @@ export class MermaidSlide extends Slide {
     }
 }
 
-class GraphologySlide extends Slide { // eslint-disable-line no-unused-vars
+export class GraphologySlide extends Slide {
     static { Slide.derived.add(this); }
 
     constructor() {
