@@ -1,6 +1,6 @@
 /* global GitgraphJS */
 
-import { Slide, MermaidSlide } from "./modules/slide.js";
+import { Slide, MermaidSlide } from "./built/src/slide.js";
 
 const baseTemplate = GitgraphJS.TemplateName.BlackArrow;
 const withoutAuthor = GitgraphJS.templateExtend(baseTemplate, {
