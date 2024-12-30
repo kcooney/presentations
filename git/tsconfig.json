@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
+    "lib": ["ES2020", "ES2021.WeakRef"],
     "outDir": "./built",
     "allowJs": true,
-    "target": "es5",
+    "target": "es2015",
     "module": "es6"
   },
   "include": ["./src/**/*"]

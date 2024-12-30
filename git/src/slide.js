@@ -66,7 +66,7 @@ class MermaidGitCommandVisitor extends GitCommandVisitor {
     }
 
     visitCommit(command) {
-        var sha1 = command.sha1();
+        var sha1 = command.commit();
         var id = sha1;
         if (command.msg) {
             id = command.msg;
@@ -92,7 +92,7 @@ class MermaidGitCommandVisitor extends GitCommandVisitor {
     }
 
     visitMerge(command) {
-        var sha1 = command.sha1();
+        var sha1 = command.commit();
         var action = 'merge ' + command.branch + ' id: "' + sha1 + '"';
         if (this.head.sha1 == sha1) {
             action += ' type: HIGHLIGHT';

@@ -1,8 +1,5 @@
 // From https://stackoverflow.com/a/47593316/95725
-export function hash128(str) {
-    if (typeof str != "string") {
-        throw Error("Must pass a string into hash128");
-    }
+export function hash128(str: string): number[] {
     let h1 = 1779033703, h2 = 3144134277,
         h3 = 1013904242, h4 = 2773480762;
     for (let i = 0, k; i < str.length; i++) {
@@ -20,10 +17,7 @@ export function hash128(str) {
     return [h1>>>0, h2>>>0, h3>>>0, h4>>>0];
 }
 
-export function hash32(str) {
-    if (typeof str != "string") {
-        throw Error("Must pass a string into hash32");
-    }
+export function hash32(str: string): number {
     let h1 = 1779033703, h2 = 3144134277,
         h3 = 1013904242, h4 = 2773480762;
     for (let i = 0, k; i < str.length; i++) {
@@ -43,7 +37,8 @@ export function hash32(str) {
 
 
 // From https://stackoverflow.com/a/47593316/95725
-export function splitmix32(a) {
+export function splitmix32(seed: number) {
+    var a = seed;
     return function() {
         a |= 0;
         a = a + 0x9e3779b9 | 0;
