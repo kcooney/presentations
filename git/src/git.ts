@@ -31,18 +31,22 @@ export class Git {
         return this;
     }
 
-    checkout(branch, create = false) {
+    checkout(branch: string, create = false) {
         this.enqueue(new CheckoutCommand(branch, create));
         return this;
     }
 
-    merge(branch) {
+    merge(branch: string) {
         this.enqueue(new MergeCommand(branch));
         return this;
     }
 
     run() {
         const commands = this.queue.shift();
+        if (!commands) {
+           // can't get here
+           return;
+        }
         if (!this.queue.length) {
             this.queue.push([]);
         }
@@ -51,7 +55,7 @@ export class Git {
         return commands.length > 0;
     }
 
-    private enqueue(command) {
+    private enqueue(command: GitCommand) {
         command.execute(this.recordRepo);
         this.queue[this.queue.length - 1].push(command);
         if (this.singleStepMode) {
@@ -61,7 +65,7 @@ export class Git {
 }
 
 abstract class GitCommand {
-    private sha1: string;
+    private sha1: string | null;
 
     constructor() {
         this.sha1 = null;
@@ -92,7 +96,7 @@ class CommitCommand extends GitCommand {
 
     constructor(
         private readonly msg: string,
-	private readonly reverse = false)
+        private readonly reverse = false)
     {
         super();
     }
@@ -118,7 +122,7 @@ class CheckoutCommand extends GitCommand {
 
     constructor(
         private readonly branch: string,
-	private readonly create = false)
+        private readonly create = false)
     {
         super();
     }
@@ -206,14 +210,14 @@ class Commit {
 
     constructor(
         private readonly msg: string,
-	public readonly sha1: string,
-	private readonly commitTime: number)
+        public readonly sha1: string,
+        private readonly commitTime: number)
     {
         this.parents = [];
         this.children = [];
     }
 
-    addParent(commit) {
+    addParent(commit: Commit) {
         this.parents.push(commit);
         commit.children.push(new WeakRef(this));
     }
@@ -235,26 +239,26 @@ export class Repo {
         this.rand = new random.SplitMix32(random.hash32(seed));
         this.curBranch = "main";
         this.branches = {};
-        this._commit("First commit")
+        this._head = this._commit("First commit")
     }
 
     get head() {
         return this._head;
     }
 
-    commit(msg) {
+    commit(msg: string) {
         const prevHead = this._head;
         const c = this._commit(msg);
         c.addParent(prevHead);
-	return c;
+        return c;
     }
 
-    private _commit(msg) {
+    private _commit(msg: string) {
         const t = this.commits.length + 1;
         const c = new Commit(msg, this.rand.nextHex(), t);
-        this._head = c;
         this.commits.push(c);
         this.branches[this.curBranch] = c;
+        this._head = c;
         return c;
     }
 
