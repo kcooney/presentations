@@ -4,11 +4,13 @@
     "lib": ["ES2015",  "ES2021.WeakRef", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "outDir": "dist"
   },
   "include": [
-    "./src/**/*.ts",
-    "./src/**/*.js"
+    "./src/**/*.ts"
   ]
 }

@@ -1,5 +1,14 @@
 {
+  "main": "./slides/app.ts",
+  "scripts": {
+    "build": "esbuild ./dist/slides.js --bundle --sourcemap --outfile=public/bundle.js"
+  },
   "dependencies": {
-    "reveal.js": "^5.1.0"
+    "reveal.js": "^5.1.0",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/reveal.js": "^5.0.4",
+    "esbuild": "0.24.2"
   }
 }
