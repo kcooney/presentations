@@ -205,20 +205,20 @@ export class GitCommandVisitor {
 }
 
 class Commit {
-    private readonly parents: Commit[];
-    private readonly children: WeakRef<Commit>[];
+    private readonly _parents: Commit[] = [];
+    private readonly children: WeakRef<Commit>[] = [];
 
     constructor(
-        private readonly msg: string,
+        public readonly msg: string,
         public readonly sha1: string,
-        private readonly commitTime: number)
-    {
-        this.parents = [];
-        this.children = [];
+        public readonly commitTime: number) {}
+
+    get parents(): Readonly<Array<Commit>> {
+        return this._parents;
     }
 
     addParent(commit: Commit) {
-        this.parents.push(commit);
+        this._parents.push(commit);
         commit.children.push(new WeakRef(this));
     }
 }

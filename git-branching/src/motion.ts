@@ -8,6 +8,13 @@ type Slides = {
 };
 const slides: Slides = {};
 
+type Initializer = (section: HTMLElement) => Slide;
+
+type Initializers = {
+    [key: string] : Initializer;
+  };
+const initializers: Initializers = {};
+
 interface ReadyEvent extends Event {
     currentSlide: HTMLElement
     indexh: number
@@ -28,17 +35,11 @@ declare global {
     }
 }
 
+function throwExpression(errorMessage: string): never {
+    throw new Error(errorMessage);
+}
+
 export class Slide {
-
-    constructor(
-        protected readonly sectionId: string)
-    {
-        slides[sectionId] = this;
-    }
-
-    sectionElement() {
-        document.getElementById(this.sectionId);
-    }
 
     onShowSlide() {
         this.onResetSlide();
@@ -48,6 +49,13 @@ export class Slide {
 
     onHideSlide() {}
 };
+
+export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
+    if (slides.length) {
+        throw new Error("Cannot call addSlide() after ReadyEvent")
+    }
+    initializers[sectionId] = callback;
+}
 
 export function enableMotion(slide: Slide, callback: () => boolean) {
     Reveal.addKeyBinding(RIGHT_ARROW_KEY, () => {
@@ -74,6 +82,13 @@ Reveal.on("slidechanged", (event: SlideChangedEvent) => {
 });
 
 Reveal.on("ready", (event: ReadyEvent) => {
+    for (const sectionId in initializers) {
+        let element = document.getElementById(sectionId)
+        if (!element) {
+            throw new Error(`No element with ID '${sectionId}'`)
+        }
+        slides[sectionId] = initializers[sectionId](element);
+    }
     if (event.currentSlide.id in slides) {
         slides[event.currentSlide.id].onShowSlide();
     }

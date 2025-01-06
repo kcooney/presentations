@@ -1,13 +1,17 @@
 {
   "main": "./slides/app.ts",
   "scripts": {
-    "build": "esbuild ./dist/slides.js --bundle --sourcemap --outfile=public/bundle.js"
+    "compile": "tsc",
+    "bundle": "esbuild ./dist/slides.js --bundle --sourcemap --outfile=public/bundle.js"
   },
   "dependencies": {
+    "graphology": "^0.25.4",
     "reveal.js": "^5.1.0",
+    "sigma": "^3.0.0",
     "typescript": "^5.7.2"
   },
   "devDependencies": {
+    "@types/events": "^3.0.3",
     "@types/reveal.js": "^5.0.4",
     "esbuild": "0.24.2"
   }
