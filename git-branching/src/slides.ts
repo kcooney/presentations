@@ -31,19 +31,8 @@ class GraphologySlide extends Slide {
 	    enableMotion(this, this.onTransition.bind(this));
     }
 
-    addNode() {
-        var head = this.repo!.head;
-        this.graph.addNode(head.sha1, {
-            label: head.sha1 + " " + head.msg,
-            forceLabel: true,
-            x: 8, y: this.pos,
-            size: 15,
-            color: "blue" });
-        this.pos -= 15;
-        if (head.parents.length > 0) {
-            this.graph.addEdge(head.sha1, head.parents[0].sha1, {
-                size: 5, color: "black", type: "arrow" });
-        }
+    onHideSlide()  {
+        this.gitContainer.style.display = "none";
     }
 
     onResetSlide() {
@@ -63,8 +52,19 @@ class GraphologySlide extends Slide {
         this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer);
     }
 
-    onHideSlide()  {
-        this.gitContainer.style.display = "none";
+    private addNode() {
+        var head = this.repo!.head;
+        this.graph.addNode(head.sha1, {
+            label: head.sha1 + " " + head.msg,
+            forceLabel: true,
+            x: 8, y: this.pos,
+            size: 15,
+            color: "blue" });
+        this.pos -= 15;
+        if (head.parents.length > 0) {
+            this.graph.addEdge(head.sha1, head.parents[0].sha1, {
+                size: 5, color: "black", type: "arrow" });
+        }
     }
 
     onTransition(): boolean {
