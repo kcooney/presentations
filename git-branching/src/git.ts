@@ -3,15 +3,13 @@ import * as random from "./random.js";
 export class Git {
     singleStepMode: boolean;
     readonly repo: Repo;
-    readonly commands: GitCommand[];
-    private readonly queue: GitCommand[][];
+    readonly commands: GitCommand[] = [];
+    private readonly queue: GitCommand[][] = [[]];
     private readonly recordRepo: Repo;
 
     constructor(seed: string) {
         this.singleStepMode = false;
         this.repo = new Repo(seed);
-        this.commands = [];
-        this.queue = [[]];
         this.recordRepo = new Repo(seed);
     }
 
@@ -21,7 +19,7 @@ export class Git {
         }
     }
 
-    commit(msg: string, reverse = false) {
+    commit(msg = "", reverse = false) {
         this.enqueue(new CommitCommand(msg, reverse));
         return this;
     }
@@ -41,14 +39,13 @@ export class Git {
         return this;
     }
 
-    run() {
+    run(): boolean {
         const commands = this.queue.shift();
-        if (!commands) {
-           // can't get here
-           return;
-        }
         if (!this.queue.length) {
             this.queue.push([]);
+        }
+        if (!commands) {
+            return false;
         }
         commands.forEach(command => command.execute(this.repo));
         this.commands.push(...commands);
@@ -64,7 +61,7 @@ export class Git {
     }
 }
 
-abstract class GitCommand {
+export abstract class GitCommand {
     private sha1: string | null;
 
     constructor() {
@@ -85,23 +82,23 @@ abstract class GitCommand {
 
     protected abstract doExecute(_repo: Repo): void;
 
-    command() {
+    command(): string {
         throw Error("Not implemented");
     }
 
     visit(_visitor: GitCommandVisitor) {}
 }
 
-class CommitCommand extends GitCommand {
+export class CommitCommand extends GitCommand {
 
     constructor(
-        private readonly msg: string,
-        private readonly reverse = false)
+        public readonly msg: string,
+        public readonly reverse = false)
     {
         super();
     }
 
-    command() {
+    command(): string {
         if (this.msg) {
             return "git commit -m '" + this.msg + "'";
         }
@@ -118,11 +115,11 @@ class CommitCommand extends GitCommand {
     }
 }
 
-class CheckoutCommand extends GitCommand {
+export class CheckoutCommand extends GitCommand {
 
     constructor(
-        private readonly branch: string,
-        private readonly create = false)
+        public readonly branch: string,
+        public readonly create = false)
     {
         super();
     }
@@ -134,7 +131,7 @@ class CheckoutCommand extends GitCommand {
         repo.checkout(this.branch);
     }
 
-    command() {
+    command(): string {
         if (this.create) {
             return "git checkout -b " + this.branch;
         }
@@ -147,15 +144,15 @@ class CheckoutCommand extends GitCommand {
     }
 }
 
-class BranchCommand extends GitCommand {
+export class BranchCommand extends GitCommand {
 
     constructor(
-        private readonly branch: string)
+        public readonly branch: string)
     {
         super();
     }
 
-    command() {
+    command(): string {
         return "git branch " + this.branch;
     }
 
@@ -169,15 +166,15 @@ class BranchCommand extends GitCommand {
     }
 }
 
-class MergeCommand extends GitCommand {
+export class MergeCommand extends GitCommand {
 
     constructor(
-        private readonly branch: string)
+        public readonly branch: string)
     {
         super();
     }
 
-    command() {
+    command(): string {
         return "git merge " + this.branch;
     }
 
@@ -204,9 +201,17 @@ export class GitCommandVisitor {
     visitMerge(_command: MergeCommand) {}
 }
 
-class Commit {
-    private readonly _parents: Commit[] = [];
-    private readonly children: WeakRef<Commit>[] = [];
+export interface Commit {
+    readonly msg: string;
+    readonly sha1: string;
+    readonly commitTime: number;
+
+    get parents(): Readonly<Array<Commit>>;
+}
+
+class InternalCommit implements Commit {
+    private readonly _parents: InternalCommit[] = [];
+    private readonly children: WeakRef<InternalCommit>[] = [];
 
     constructor(
         public readonly msg: string,
@@ -217,19 +222,19 @@ class Commit {
         return this._parents;
     }
 
-    addParent(commit: Commit) {
+    addParent(commit: InternalCommit) {
         this._parents.push(commit);
         commit.children.push(new WeakRef(this));
     }
 }
 
 type Branches = {
-    [key: string]: Commit;
+    [key: string]: InternalCommit;
 };
 
 export class Repo {
-    private _head: Commit;
-    private commits: Commit[];
+    private _head: InternalCommit;
+    private commits: InternalCommit[];
     private curBranch: string;
     private readonly rand: random.Random;
     private branches: Branches;
@@ -242,7 +247,7 @@ export class Repo {
         this._head = this._commit("First commit")
     }
 
-    get head() {
+    get head(): Commit {
         return this._head;
     }
 
@@ -255,7 +260,7 @@ export class Repo {
 
     private _commit(msg: string) {
         const t = this.commits.length + 1;
-        const c = new Commit(msg, this.rand.nextHex(), t);
+        const c = new InternalCommit(msg, this.rand.nextHex(), t);
         this.commits.push(c);
         this.branches[this.curBranch] = c;
         this._head = c;
@@ -266,7 +271,7 @@ export class Repo {
         if (name in this.branches) {
             throw Error("Already a branch with name '" + name + "'");
         }
-        this.branches[name] = this.head;
+        this.branches[name] = this._head;
     }
 
     merge(branch: string) {

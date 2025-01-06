@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES5",
-    "lib": ["ES2015",  "ES2021.WeakRef", "DOM"],
+    "lib": ["ES2020",  "ES2021.WeakRef", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "strict": true,
