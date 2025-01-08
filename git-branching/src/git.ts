@@ -88,7 +88,7 @@ export abstract class GitCommand {
         throw Error("Not implemented");
     }
 
-    visit(_visitor: GitCommandVisitor) {}
+    visit(_visitor: GitCommandVisitor): void {}
 }
 
 export class CommitCommand extends GitCommand {
@@ -192,15 +192,15 @@ export class MergeCommand extends GitCommand {
 
 export class GitCommandVisitor {
 
-    visit(_command: GitCommand) {}
+    visit(_command: GitCommand): void {}
 
-    visitCommit(_command: CommitCommand) {}
+    visitCommit(_command: CommitCommand): void {}
 
-    visitCheckout(_command: CheckoutCommand) {}
+    visitCheckout(_command: CheckoutCommand): void {}
 
-    visitBranch(_command: BranchCommand) {}
+    visitBranch(_command: BranchCommand): void {}
 
-    visitMerge(_command: MergeCommand) {}
+    visitMerge(_command: MergeCommand): void {}
 }
 
 export interface Commit {
@@ -208,7 +208,7 @@ export interface Commit {
     readonly sha1: string;
     readonly commitTime: number;
 
-    get parents(): Readonly<Array<Commit>>;
+    get parents(): ReadonlyArray<Commit>;
 }
 
 class InternalCommit implements Commit {

@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
+    "noImplicitOverride": false,
     "outDir": "dist"
   },
   "include": [

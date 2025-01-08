@@ -106,12 +106,9 @@ export class MermaidSlide implements Slide, WithTransitions {
         }
         const graphDefinition = visitor.graphDefinition();
 
-        const drawDiagram = async function () {
-            const { svg } = await mermaid.render("graphDiv", graphDefinition);
-            element.innerHTML = svg;
-        };
-
-        drawDiagram().then(() => {});
+        mermaid.render("graphDiv", graphDefinition)
+            .then(renderResult => element.innerHTML = renderResult.svg)
+            .catch(error => console.log('render', error));
 
         return hasMoreCommands;
     }

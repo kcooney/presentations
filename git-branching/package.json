@@ -2,6 +2,7 @@
   "main": "./slides/app.ts",
   "scripts": {
     "compile": "tsc",
+    "lint": "eslint src",
     "bundle": "esbuild ./dist/slides.js --bundle --sourcemap --outfile=public/bundle.js"
   },
   "dependencies": {
@@ -9,8 +10,7 @@
     "mermaid": "^11.4.1",
     "reveal.js": "^5.1.0",
     "sigma": "^3.0.0",
-    "type-fest": "^4.31.0",
-    "typescript": "^5.7.2"
+    "type-fest": "^4.31.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -19,6 +19,7 @@
     "esbuild": "0.24.2",
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
-    "typescript-eslint": "^8.19.0"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.1"
   }
 }
