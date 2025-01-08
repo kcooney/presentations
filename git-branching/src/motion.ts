@@ -35,20 +35,16 @@ declare global {
     }
 }
 
-function throwExpression(errorMessage: string): never {
-    throw new Error(errorMessage);
-}
 
-export class Slide {
-
-    onShowSlide() {
-        this.onResetSlide();
-    }
-
-    onResetSlide() {}
-
-    onHideSlide() {}
+export interface Slide {
+    onShowSlide(): void;
+    onHideSlide(): void;
 };
+
+export interface WithTransitions extends Slide {
+    onTransition(): boolean;
+    onResetSlide(): void;
+}
 
 export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
     if (slides.length) {
@@ -57,18 +53,9 @@ export function addSlide(sectionId: string, callback: (section: HTMLElement) => 
     initializers[sectionId] = callback;
 }
 
-export function enableMotion(slide: Slide, callback: () => boolean) {
-    Reveal.addKeyBinding(RIGHT_ARROW_KEY, () => {
-        // If left pressed, slide resets, and next left goes to prev slide.
-        Reveal.addKeyBinding(LEFT_ARROW_KEY, () => {
-            Reveal.addKeyBinding(LEFT_ARROW_KEY, 'prev');   
-            slide.onResetSlide();
-        });
-        if (!callback()) {
-            Reveal.addKeyBinding(RIGHT_ARROW_KEY, 'next');
-        }
-    });
-};
+function instanceOfWithTransitions(slide: Slide): slide is WithTransitions {
+    return 'onTransition' in slide;
+}
 
 Reveal.on("slidechanged", (event: SlideChangedEvent) => {
     Reveal.addKeyBinding(RIGHT_ARROW_KEY, "next");
@@ -77,13 +64,27 @@ Reveal.on("slidechanged", (event: SlideChangedEvent) => {
         slides[event.previousSlide.id].onHideSlide();
     }
     if (event.currentSlide.id in slides) {
-        slides[event.currentSlide.id].onShowSlide();
+        const slide = slides[event.currentSlide.id];
+        slide.onShowSlide();
+        if (instanceOfWithTransitions(slide)) {
+            Reveal.addKeyBinding(RIGHT_ARROW_KEY, () => {
+                // If left pressed, slide resets, and next left goes to prev slide.
+                Reveal.addKeyBinding(LEFT_ARROW_KEY, () => {
+                    Reveal.addKeyBinding(LEFT_ARROW_KEY, 'prev');
+                    slide.onResetSlide();
+                });
+                const hasMoreTransitions = slide.onTransition();
+                if (!hasMoreTransitions) {
+                    Reveal.addKeyBinding(RIGHT_ARROW_KEY, 'next');
+                }
+            });
+        }
     }
 });
 
 Reveal.on("ready", (event: ReadyEvent) => {
     for (const sectionId in initializers) {
-        let element = document.getElementById(sectionId)
+        const element = document.getElementById(sectionId)
         if (!element) {
             throw new Error(`No element with ID '${sectionId}'`)
         }

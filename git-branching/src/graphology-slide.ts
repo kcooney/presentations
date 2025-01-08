@@ -1,9 +1,9 @@
 import Graph from "graphology";
 import Sigma from "sigma";
-import {Slide, enableMotion} from "./motion.js";
+import {Slide, WithTransitions} from "./motion.js";
 import {Repo} from "./git.js";
 
-export class GraphologySlide extends Slide {
+export class GraphologySlide implements Slide, WithTransitions {
     private readonly gitContainer: HTMLElement;
     private readonly sigmaContainer: HTMLElement;
     private readonly code: HTMLElement;
@@ -15,7 +15,6 @@ export class GraphologySlide extends Slide {
     private repo: Repo | undefined;
 
     constructor(section: HTMLElement) {
-       super();
        this.seed = section.id;
        this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
        this.sigmaContainer = section.getElementsByClassName("sigma-container")[0] as HTMLElement;
@@ -26,7 +25,6 @@ export class GraphologySlide extends Slide {
     onShowSlide() {
         this.gitContainer.style.display = "block";
         this.onResetSlide();
-        enableMotion(this, this.onTransition.bind(this));
     }
 
     onHideSlide()  {

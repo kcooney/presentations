@@ -1,5 +1,5 @@
 import mermaid from "mermaid";
-import {Slide, enableMotion} from "./motion.js";
+import {Slide, WithTransitions} from "./motion.js";
 import * as git from "./git.js";
 
 mermaid.initialize({ startOnLoad: false });
@@ -55,7 +55,7 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     }
 }
 
-export class MermaidSlide extends Slide {
+export class MermaidSlide implements Slide, WithTransitions {
     private readonly gitContainer: HTMLElement;
     private readonly code: HTMLElement;
     private readonly mermaidElement: HTMLElement;
@@ -63,7 +63,6 @@ export class MermaidSlide extends Slide {
     private git: git.Git | undefined;
     
     constructor(section: HTMLElement) {
-        super();
         this.seed = section.id;
         this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
         this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
@@ -73,7 +72,6 @@ export class MermaidSlide extends Slide {
     onShowSlide() {
         this.gitContainer.style.display = "block";
         this.onResetSlide();
-        enableMotion(this, this.onTransition.bind(this));
     }
 
     onHideSlide()  {
@@ -92,9 +90,10 @@ export class MermaidSlide extends Slide {
     }
 
     onTransition(): boolean {
-        if (!this.git || !this.git.run()) {
+        if (!this.git) {
             return false;
         }
+        const hasMoreCommands = this.git.run();
 
         const visitor = new MermaidGitCommandVisitor(this.git.repo);
         this.git.commands.forEach(command => command.visit(visitor));
@@ -112,6 +111,6 @@ export class MermaidSlide extends Slide {
 
         drawDiagram().then(() => {});
 
-        return true;
+        return hasMoreCommands;
     }
 }

@@ -39,9 +39,11 @@ export class Git {
         return this;
     }
 
+    /** Runs the next set of commands; returns true if there are more commands. */
     run(): boolean {
         const commands = this.queue.shift();
-        if (!this.queue.length) {
+        const hasMoreCommands = this.queue.length > 0;
+        if (!hasMoreCommands) {
             this.queue.push([]);
         }
         if (!commands) {
@@ -49,7 +51,7 @@ export class Git {
         }
         commands.forEach(command => command.execute(this.repo));
         this.commands.push(...commands);
-        return commands.length > 0;
+        return hasMoreCommands;
     }
 
     private enqueue(command: GitCommand) {
