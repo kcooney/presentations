@@ -8,7 +8,7 @@ import {MermaidSlide} from './mermaid-slide.js';
 class CommittingSlide extends MermaidSlide {
     count = 0;
 
-    record(git: Git) {
+    override record(git: Git): void {
         git.commit("Add shooter").commit("Shoot faster");
         git.commit("Revert shoot faster", true);
         git.commit("Use gyro");
@@ -17,7 +17,7 @@ class CommittingSlide extends MermaidSlide {
 
 class MermaidDemoSlide extends MermaidSlide {
 
-    record(git: Git) {
+    override record(git: Git): void {
         git.commit().checkout("develop", true);
         git.commit().commit().checkout("main");
         git.merge("develop").commit().commit();

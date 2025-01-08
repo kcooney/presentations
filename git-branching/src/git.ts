@@ -100,7 +100,7 @@ export class CommitCommand extends GitCommand {
         super();
     }
 
-    command(): string {
+    override command(): string {
         if (this.msg) {
             return "git commit -m '" + this.msg + "'";
         }
@@ -111,7 +111,7 @@ export class CommitCommand extends GitCommand {
         repo.commit(this.msg);
     }
 
-    visit(visitor: GitCommandVisitor) {
+    override visit(visitor: GitCommandVisitor) {
         visitor.visit(this);
         visitor.visitCommit(this);
     }
@@ -133,14 +133,14 @@ export class CheckoutCommand extends GitCommand {
         repo.checkout(this.branch);
     }
 
-    command(): string {
+    override command(): string {
         if (this.create) {
             return "git checkout -b " + this.branch;
         }
         return "git checkout " + this.branch;
     }
 
-    visit(visitor: GitCommandVisitor) {
+    override visit(visitor: GitCommandVisitor) {
         visitor.visit(this);
         visitor.visitCheckout(this);
     }
@@ -154,7 +154,7 @@ export class BranchCommand extends GitCommand {
         super();
     }
 
-    command(): string {
+    override command(): string {
         return "git branch " + this.branch;
     }
 
@@ -162,7 +162,7 @@ export class BranchCommand extends GitCommand {
         repo.branch(this.branch);
     }
 
-    visit(visitor: GitCommandVisitor) {
+    override visit(visitor: GitCommandVisitor) {
         visitor.visit(this);
         visitor.visitBranch(this);
     }
@@ -176,7 +176,7 @@ export class MergeCommand extends GitCommand {
         super();
     }
 
-    command(): string {
+    override command(): string {
         return "git merge " + this.branch;
     }
 
@@ -184,7 +184,7 @@ export class MergeCommand extends GitCommand {
         repo.merge(this.branch);
     }
 
-    visit(visitor: GitCommandVisitor) {
+    override visit(visitor: GitCommandVisitor) {
         visitor.visit(this);
         visitor.visitMerge(this);
     }

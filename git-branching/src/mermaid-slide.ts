@@ -14,11 +14,11 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
         this.head = repo.head;
     }
 
-    visit(command: git.GitCommand) {
+    override visit(command: git.GitCommand) {
         this.last_command = command.command();
     }
 
-    visitCommit(command: git.CommitCommand) {
+    override visitCommit(command: git.CommitCommand) {
         const sha1 = command.commit();
         const id = command.msg ? command.msg : sha1;
         let action = 'commit id:"' + id + '"';
@@ -30,18 +30,18 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
         this.actions.push(action);
     }
 
-    visitCheckout(command: git.CheckoutCommand) {
+    override visitCheckout(command: git.CheckoutCommand) {
         if (command.create) {
             this.actions.push("branch " + command.branch);
         }
         this.actions.push("checkout " + command.branch);
     }
 
-    visitBranch(command: git.BranchCommand) {
+    override visitBranch(command: git.BranchCommand) {
         this.actions.push("branch " + command.branch);
     }
 
-    visitMerge(command: git.MergeCommand) {
+    override visitMerge(command: git.MergeCommand) {
         const sha1 = command.commit();
         let action = 'merge ' + command.branch + ' id: "' + sha1 + '"';
         if (this.head.sha1 == sha1) {
@@ -79,7 +79,7 @@ export class MermaidSlide implements Slide, WithTransitions {
         this.gitContainer.style.display = "none";
     }
 
-    protected record(_git: git.Git) {}
+    protected record(_git: git.Git): void {}
 
     onResetSlide() {
         this.git = new git.Git(this.seed);
