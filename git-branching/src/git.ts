@@ -74,7 +74,7 @@ export abstract class GitCommand {
         if (this.sha1 === null) {
             throw Error("Cannot call commit() before execute()")
         }
-        return this.sha1!;
+        return this.sha1 || "";
     }
 
     execute(repo: Repo) {

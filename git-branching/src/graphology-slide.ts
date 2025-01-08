@@ -76,13 +76,13 @@ export class GraphologySlide implements Slide, WithTransitions {
             this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
             this.repo.commit("Add shooter");
             this.addNode();
-            this.sigmaInstance!.refresh();
+            this.sigmaInstance?.refresh();
             return true;
         case 2:
             this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.repo.commit("Shooter faster");
             this.addNode();
-            this.sigmaInstance!.refresh();
+            this.sigmaInstance?.refresh();
             break; // No more transitions
         }
         return false;
