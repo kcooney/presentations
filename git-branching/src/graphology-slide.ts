@@ -12,7 +12,7 @@ export class GraphologySlide implements Slide, WithTransitions {
     private sigmaInstance: Sigma | undefined;
     private count: number = 0;
     private pos: number = 0;
-    private repo: Repo | undefined;
+    private repo: Repo;
 
     constructor(section: HTMLElement) {
        this.seed = section.id;
@@ -20,11 +20,12 @@ export class GraphologySlide implements Slide, WithTransitions {
        this.sigmaContainer = section.getElementsByClassName("sigma-container")[0] as HTMLElement;
        this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
        this.graph = new Graph({type: "directed", allowSelfLoops: false});
+       this.repo = new Repo(this.seed);
     }
 
     onShowSlide() {
         this.gitContainer.style.display = "block";
-        this.onResetSlide();
+        this.resetSlide();
     }
 
     onHideSlide()  {
@@ -34,6 +35,10 @@ export class GraphologySlide implements Slide, WithTransitions {
 
     onResetSlide() {
         this.repo = new Repo(this.seed);
+        this.resetSlide();
+    }
+
+    private resetSlide() {
         this.sigmaInstance?.kill();
         this.graph.clear();
         this.count = 0;
@@ -51,7 +56,7 @@ export class GraphologySlide implements Slide, WithTransitions {
     }
 
     private addNode() {
-        const head = this.repo!.head;
+        const head = this.repo.head;
         this.graph.addNode(head.sha1, {
             label: head.sha1 + " " + head.msg,
             forceLabel: true,
@@ -69,13 +74,13 @@ export class GraphologySlide implements Slide, WithTransitions {
         switch (++this.count) {
         case 1:
             this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
-            this.repo!.commit("Add shooter");
+            this.repo.commit("Add shooter");
             this.addNode();
             this.sigmaInstance!.refresh();
             return true;
         case 2:
             this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
-            this.repo!.commit("Shooter faster");
+            this.repo.commit("Shooter faster");
             this.addNode();
             this.sigmaInstance!.refresh();
             break; // No more transitions

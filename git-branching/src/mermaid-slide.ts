@@ -60,18 +60,19 @@ export class MermaidSlide implements Slide, WithTransitions {
     private readonly code: HTMLElement;
     private readonly mermaidElement: HTMLElement;
     private readonly seed: string;
-    private git: git.Git | undefined;
+    private git: git.Git
     
     constructor(section: HTMLElement) {
         this.seed = section.id;
         this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
         this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
         this.mermaidElement = this.gitContainer.getElementsByClassName("mermaid")[0] as HTMLElement;
+        this.git = new git.Git(this.seed);
     }
 
     onShowSlide() {
         this.gitContainer.style.display = "block";
-        this.onResetSlide();
+        this.resetSlide();
     }
 
     onHideSlide()  {
@@ -81,8 +82,12 @@ export class MermaidSlide implements Slide, WithTransitions {
     protected record(_git: git.Git) {}
 
     onResetSlide() {
-        this.code.innerHTML = "$ git checkout main";
         this.git = new git.Git(this.seed);
+        this.resetSlide();
+    }
+
+    private resetSlide() {
+        this.code.innerHTML = "$ git checkout main";
         this.git.singleStepMode = true;
         this.git.commit("Initial commit message");
         this.record(this.git);
@@ -90,9 +95,6 @@ export class MermaidSlide implements Slide, WithTransitions {
     }
 
     onTransition(): boolean {
-        if (!this.git) {
-            return false;
-        }
         const hasMoreCommands = this.git.run();
 
         const visitor = new MermaidGitCommandVisitor(this.git.repo);
