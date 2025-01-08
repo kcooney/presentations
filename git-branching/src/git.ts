@@ -4,7 +4,9 @@ export class Git {
     singleStepMode: boolean;
     readonly repo: Repo;
     readonly commands: GitCommand[] = [];
-    private readonly queue: GitCommand[][] = [[]];
+    private paused = true;
+    // Queue invariant: all nested lists are non-empty.
+    private readonly queue: GitCommand[][] = [];
     private readonly recordRepo: Repo;
 
     constructor(seed: string) {
@@ -14,9 +16,7 @@ export class Git {
     }
 
     pause() {
-        if (this.queue[this.queue.length - 1].length) {
-            this.queue.push([]);
-        }
+        this.paused = true;
     }
 
     commit(msg = "", reverse = false) {
@@ -42,20 +42,20 @@ export class Git {
     /** Runs the next set of commands; returns true if there are more commands. */
     run(): boolean {
         const commands = this.queue.shift();
-        const hasMoreCommands = this.queue.length > 0;
-        if (!hasMoreCommands) {
-            this.queue.push([]);
-        }
         if (!commands) {
-            return false;
+            return false; // run() called without any commands to play!
         }
         commands.forEach(command => command.execute(this.repo));
         this.commands.push(...commands);
-        return hasMoreCommands;
+        return this.queue.length > 0;
     }
 
     private enqueue(command: GitCommand) {
         command.execute(this.recordRepo);
+        if (this.paused) {
+            this.queue.push([]);
+            this.paused = false;
+        }
         this.queue[this.queue.length - 1].push(command);
         if (this.singleStepMode) {
             this.pause();
