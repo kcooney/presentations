@@ -6,7 +6,7 @@ mermaid.initialize({ startOnLoad: false });
 
 class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     readonly actions: string[] = [];
-    last_command: string | undefined;
+    readonly commands: string[] = [];
     head: git.Commit;
 
     constructor(repo: git.Repo) {
@@ -15,7 +15,7 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     }
 
     override visit(command: git.GitCommand) {
-        this.last_command = command.command();
+        this.commands.push(command.command());
     }
 
     override visitCommit(command: git.CommitCommand) {
@@ -77,6 +77,7 @@ export class MermaidSlide implements Slide, WithTransitions {
 
     onHideSlide()  {
         this.gitContainer.style.display = "none";
+        this.git = new git.Git(this.seed);
     }
 
     protected record(_git: git.Git): void {}
@@ -101,9 +102,8 @@ export class MermaidSlide implements Slide, WithTransitions {
         this.git.commands.forEach(command => command.visit(visitor));
 
         const element = this.mermaidElement;
-        if (visitor.last_command != null) {
-            this.code.innerHTML += "<br />$ " + visitor.last_command;
-        }
+        const commands = ["git checkout main"].concat(visitor.commands);
+        this.code.innerHTML = "$ " + commands.join("<br />$ ");
         const graphDefinition = visitor.graphDefinition();
 
         mermaid.render("graphDiv", graphDefinition)

@@ -18,9 +18,13 @@ class CommittingSlide extends MermaidSlide {
 class MermaidDemoSlide extends MermaidSlide {
 
     override record(git: Git): void {
-        git.commit().checkout("develop", true);
-        git.commit().commit().checkout("main");
-        git.merge("develop").commit().commit();
+        git.commit().checkout("develop", true).commit();
+        git.singleStepMode = false;
+        git.commit().commit().pause();
+        git.checkout("main").pause();
+        git.merge("develop").pause();
+        git.commit().pause()
+        git.commit();
     }
 }
 
