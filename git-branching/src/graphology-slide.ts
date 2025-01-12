@@ -1,16 +1,15 @@
 import Graph from "graphology";
 import Sigma from "sigma";
-import {Slide, WithTransitions} from "./motion.js";
+import {Slide, enableMotion} from "./motion.js";
 import {Repo} from "./git.js";
 
-export class GraphologySlide implements Slide, WithTransitions {
+export class GraphologySlide implements Slide {
     private readonly gitContainer: HTMLElement;
     private readonly sigmaContainer: HTMLElement;
     private readonly code: HTMLElement;
     private readonly graph: Graph;
     private readonly seed: string;
     private sigmaInstance: Sigma | undefined;
-    private count: number = 0;
     private pos: number = 0;
     private repo: Repo;
 
@@ -26,22 +25,18 @@ export class GraphologySlide implements Slide, WithTransitions {
     onShowSlide() {
         this.gitContainer.style.display = "block";
         this.resetSlide();
+        enableMotion(this.onTransition.bind(this));
     }
 
     onHideSlide()  {
         this.sigmaInstance?.kill();
         this.gitContainer.style.display = "none";
-    }
-
-    onResetSlide() {
         this.repo = new Repo(this.seed);
-        this.resetSlide();
     }
 
     private resetSlide() {
         this.sigmaInstance?.kill();
         this.graph.clear();
-        this.count = 0;
 
         this.code.innerHTML = "$ git checkout main";
         this.graph.addNode("tr", {x: 100, y: 100, size: 0, hidden: true});
@@ -70,21 +65,27 @@ export class GraphologySlide implements Slide, WithTransitions {
         }
     }
 
-    onTransition(): boolean {
-        switch (++this.count) {
+    private onTransition(index: number): boolean {
+        let hasMoreTransitions = true;
+        switch (index) {
+        case 0:
+            this.repo = new Repo(this.seed);
+            this.resetSlide();
+            break;
         case 1:
             this.code.innerHTML += "<br />$ git commit -m 'Add shooter'";
             this.repo.commit("Add shooter");
             this.addNode();
             this.sigmaInstance?.refresh();
-            return true;
+            break;
         case 2:
             this.code.innerHTML += "<br />$ git commit -m 'Shoot faster'";
             this.repo.commit("Shooter faster");
             this.addNode();
             this.sigmaInstance?.refresh();
-            break; // No more transitions
+            hasMoreTransitions = false;
+            break;
         }
-        return false;
+        return hasMoreTransitions;
     }
 }

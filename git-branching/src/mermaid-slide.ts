@@ -1,5 +1,5 @@
 import mermaid from "mermaid";
-import {Slide, WithTransitions} from "./motion.js";
+import {Slide, enableMotion} from "./motion.js";
 import * as git from "./git.js";
 
 mermaid.initialize({ startOnLoad: false });
@@ -55,7 +55,7 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     }
 }
 
-export class MermaidSlide implements Slide, WithTransitions {
+export class MermaidSlide implements Slide {
     private readonly gitContainer: HTMLElement;
     private readonly code: HTMLElement;
     private readonly mermaidElement: HTMLElement;
@@ -73,6 +73,8 @@ export class MermaidSlide implements Slide, WithTransitions {
     onShowSlide() {
         this.gitContainer.style.display = "block";
         this.resetSlide();
+        enableMotion(this.onTransition.bind(this));
+        this.onTransition(-1);
     }
 
     onHideSlide()  {
@@ -82,20 +84,18 @@ export class MermaidSlide implements Slide, WithTransitions {
 
     protected record(_git: git.Git): void {}
 
-    onResetSlide() {
-        this.git = new git.Git(this.seed);
-        this.resetSlide();
-    }
-
     private resetSlide() {
         this.code.innerHTML = "$ git checkout main";
         this.git.singleStepMode = true;
         this.git.commit("Initial commit message");
         this.record(this.git);
-        this.onTransition();
     }
 
-    onTransition(): boolean {
+    private onTransition(index: number): boolean {
+        if (index === 0) {
+            this.git = new git.Git(this.seed);
+            this.resetSlide();
+        }
         const hasMoreCommands = this.git.run();
 
         const visitor = new MermaidGitCommandVisitor(this.git.repo);
@@ -108,7 +108,7 @@ export class MermaidSlide implements Slide, WithTransitions {
 
         mermaid.render("graphDiv", graphDefinition)
             .then(renderResult => element.innerHTML = renderResult.svg)
-            .catch(error => console.log('render', error));
+            .catch(error => console.log('render error: %s', error));
 
         return hasMoreCommands;
     }

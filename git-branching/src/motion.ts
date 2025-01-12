@@ -41,11 +41,6 @@ export interface Slide {
     onHideSlide(): void;
 };
 
-export interface WithTransitions extends Slide {
-    onTransition(): boolean;
-    onResetSlide(): void;
-}
-
 export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
     if (slides.length) {
         throw new Error("Cannot call addSlide() after ReadyEvent")
@@ -53,8 +48,20 @@ export function addSlide(sectionId: string, callback: (section: HTMLElement) => 
     initializers[sectionId] = callback;
 }
 
-function instanceOfWithTransitions(slide: Slide): slide is WithTransitions {
-    return 'onTransition' in slide;
+export function enableMotion(callback: (index: number) => boolean) {
+    let index = 0;
+    Reveal.addKeyBinding(RIGHT_ARROW_KEY, () => {
+        // If left pressed, slide resets, and next left goes to prev slide.
+        Reveal.addKeyBinding(LEFT_ARROW_KEY, () => {
+            Reveal.addKeyBinding(LEFT_ARROW_KEY, 'prev');
+            index = 0;
+            callback(index);
+        });
+        const hasMoreTransitions = callback(++index);
+        if (!hasMoreTransitions) {
+            Reveal.addKeyBinding(RIGHT_ARROW_KEY, 'next');
+        }
+    });
 }
 
 Reveal.on("slidechanged", (event: SlideChangedEvent) => {
@@ -64,21 +71,7 @@ Reveal.on("slidechanged", (event: SlideChangedEvent) => {
         slides[event.previousSlide.id].onHideSlide();
     }
     if (event.currentSlide.id in slides) {
-        const slide = slides[event.currentSlide.id];
-        slide.onShowSlide();
-        if (instanceOfWithTransitions(slide)) {
-            Reveal.addKeyBinding(RIGHT_ARROW_KEY, () => {
-                // If left pressed, slide resets, and next left goes to prev slide.
-                Reveal.addKeyBinding(LEFT_ARROW_KEY, () => {
-                    Reveal.addKeyBinding(LEFT_ARROW_KEY, 'prev');
-                    slide.onResetSlide();
-                });
-                const hasMoreTransitions = slide.onTransition();
-                if (!hasMoreTransitions) {
-                    Reveal.addKeyBinding(RIGHT_ARROW_KEY, 'next');
-                }
-            });
-        }
+        slides[event.currentSlide.id].onShowSlide();
     }
 });
 
