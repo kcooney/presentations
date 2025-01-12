@@ -260,7 +260,7 @@ export class Repo {
         return c;
     }
 
-    private _commit(msg: string) {
+    private _commit(msg: string): InternalCommit {
         const t = this.commits.length + 1;
         const c = new InternalCommit(msg, this.rand.nextHex(), t);
         this.commits.push(c);
