@@ -50,6 +50,10 @@ export class Git {
         return this.queue.length > 0;
     }
 
+    temporalTopologicalWalk(callback: (commit: Commit) => void): void {
+        this.recordRepo.temporalTopologicalWalk(callback);
+    }
+
     private enqueue(command: GitCommand) {
         command.execute(this.recordRepo);
         if (this.paused) {
@@ -209,6 +213,10 @@ export interface Commit {
     readonly commitTime: number;
 
     get parents(): ReadonlyArray<Commit>;
+
+    branchChildren(): Commit[];
+
+    mergeChildren(): Commit[];
 }
 
 class InternalCommit implements Commit {
@@ -220,6 +228,18 @@ class InternalCommit implements Commit {
         public readonly sha1: string,
         public readonly commitTime: number) {}
 
+    private isMergeChildOf(parent: InternalCommit): boolean {
+        return !!this._parents.length && this._parents[0] !== parent;
+    }
+
+    branchChildren(): Commit[] {
+        return this.allChildren().filter(commit => !commit.isMergeChildOf(this));
+    }
+
+    mergeChildren(): Commit[] {
+        return this.allChildren().filter(commit => commit.isMergeChildOf(this));
+    }
+
     get parents(): Readonly<Array<Commit>> {
         return this._parents;
     }
@@ -227,6 +247,21 @@ class InternalCommit implements Commit {
     addParent(commit: InternalCommit) {
         this._parents.push(commit);
         commit.children.push(new WeakRef(this));
+    }
+
+    private forEachChild(callback: (commit: InternalCommit) => void) {
+        this.children.forEach(ref => {
+            const maybeObj = ref.deref();
+            if (maybeObj) {
+                callback(maybeObj);
+            }
+        });
+    }
+
+    allChildren(): InternalCommit[] {
+        const children: InternalCommit[] = [];
+        this.forEachChild(child => children.push(child));
+        return children;
     }
 }
 
@@ -236,21 +271,49 @@ type Branches = {
 
 export class Repo {
     private _head: InternalCommit;
-    private commits: InternalCommit[];
+    private _commits: InternalCommit[];
     private curBranch: string;
     private readonly rand: random.Random;
-    private branches: Branches;
+    private branches: Branches; // TODO: Use Map; see https://howtodoinjava.com/typescript/maps/
 
     constructor(seed: string) {
-        this.commits = []
+        this._commits = []
         this.rand = new random.SplitMix32(random.hash32(seed));
         this.curBranch = "main";
         this.branches = {};
-        this._head = this._commit("First commit")
+        this._head = this._commit("First commit");
     }
 
     get head(): Commit {
         return this._head;
+    }
+
+    get commits(): Commit[] {
+        return this._commits;
+    }
+
+    temporalTopologicalWalk(callback: (commit: Commit) => void): void {
+        const visited = new Set<string>();
+
+        function ordering(a: InternalCommit, b: InternalCommit): number {
+            return a.commitTime - b.commitTime;
+        }
+
+        function dfs(commit: InternalCommit): void {
+            if (!(visited.has(commit.sha1))) {
+                visited.add(commit.sha1);
+
+                const children = commit.allChildren();
+                children.sort(ordering);
+                children.forEach(dfs);
+
+                callback(commit);
+            }
+        }
+
+        const sorted  = [...this._commits];
+        sorted.sort(ordering);
+        sorted.forEach(dfs);
     }
 
     commit(msg: string) {
@@ -261,9 +324,9 @@ export class Repo {
     }
 
     private _commit(msg: string): InternalCommit {
-        const t = this.commits.length + 1;
+        const t = this._commits.length + 1;
         const c = new InternalCommit(msg, this.rand.nextHex(), t);
-        this.commits.push(c);
+        this._commits.push(c);
         this.branches[this.curBranch] = c;
         this._head = c;
         return c;
