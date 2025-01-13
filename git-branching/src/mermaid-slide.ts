@@ -85,7 +85,7 @@ export class MermaidSlide implements Slide {
     protected record(_git: git.Git): void {}
 
     private resetSlide() {
-        this.code.innerHTML = "$ git checkout main";
+        this.git.checkout("main");
         this.git.singleStepMode = true;
         this.git.commit("Initial commit message");
         this.record(this.git);
@@ -102,8 +102,7 @@ export class MermaidSlide implements Slide {
         this.git.commands.forEach(command => command.visit(visitor));
 
         const element = this.mermaidElement;
-        const commands = ["git checkout main"].concat(visitor.commands);
-        this.code.innerHTML = "$ " + commands.join("<br />$ ");
+        this.code.innerHTML = "$ " + visitor.commands.join("<br />$ ");
         const graphDefinition = visitor.graphDefinition();
 
         mermaid.render("graphDiv", graphDefinition)
