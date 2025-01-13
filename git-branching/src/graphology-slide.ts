@@ -4,9 +4,10 @@ import {Slide, enableMotion} from "./motion.js";
 import {Commit, Git} from "./git.js";
 
 const SPACE_BETWEEN_COMMITS = 3;
-const SPACE_BETWEEN_BRANCHES = 8;
+const SPACE_BETWEEN_BRANCHES = 4;
 const LABEL_SIZE = 10;
 const SHOW_INVISIBLES = false;
+const COLORS = ["#0000ec", "#dede00", "purple"];
 
 class CommitWrapper {
     branchChildren: CommitWrapper[] = [];
@@ -53,7 +54,13 @@ export class GraphologySlide implements Slide {
     }
 
     protected record(git: Git): void {
-        git.commit("Add motors").commit("Add shooter").commit("Shoot faster");
+        git.commit().checkout("develop", true).commit();
+        git.singleStepMode = false;
+        git.commit().commit().pause();
+        git.checkout("main").pause();
+        git.merge("develop").pause();
+        git.commit().pause()
+        git.commit();
     }
 
     private resetSlide() {
@@ -65,7 +72,9 @@ export class GraphologySlide implements Slide {
         this.record(this.git);
         
         this.calculateCommitPositions();
-        this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer);
+        this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer, {
+            autoCenter: false,
+        });
         console.log("maxI=%d; maxJ=%d", this.maxI, this.maxJ);
         const size = SHOW_INVISIBLES ? 3 : 0;
         this.graph.addNode("tr", {
@@ -93,13 +102,14 @@ export class GraphologySlide implements Slide {
                     console.log("Could not find wrapper for '%s'", commit.sha1);
                 } else {
                     console.log("%s %s - i=%d; j=%d", commit.sha1, commit.msg, wrapper.i, wrapper.j);
+                    const color = COLORS[wrapper.j % COLORS.length]
                     this.graph.addNode(commit.sha1, {
                         label: commit.sha1 + " " + commit.msg,
                         forceLabel: true,
                         y: wrapper.i * SPACE_BETWEEN_COMMITS + shiftUp,
                         x: wrapper.j * SPACE_BETWEEN_BRANCHES,
                         size: 15,
-                        color: "blue" });
+                        color: color });
                     commit.parents.forEach(parentCommit => {
                         this.graph.addEdge(commit.sha1, parentCommit.sha1, {
                             size: 5, color: "black", type: "arrow" });
