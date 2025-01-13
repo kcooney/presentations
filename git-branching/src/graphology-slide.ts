@@ -24,8 +24,11 @@ export class GraphologySlide implements Slide {
     private readonly graph: Graph;
     private readonly seed: string;
     private readonly commitWrapperBySha1 = new Map<string, CommitWrapper>();
+    private readonly maxY = 8 * 3;
     private sigmaInstance: Sigma | undefined;
     private git: Git;
+    private maxI = 0;
+    private maxJ = 0;
 
     constructor(section: HTMLElement) {
        this.seed = section.id;
@@ -61,15 +64,18 @@ export class GraphologySlide implements Slide {
         this.git.checkout("main");
         this.record(this.git);
         
-        const [maxI, maxJ] = this.calculateCommitPositions();
+        this.calculateCommitPositions();
         this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer);
-        console.log("maxI=%d; maxJ=%d", maxI, maxJ);
+        console.log("maxI=%d; maxJ=%d", this.maxI, this.maxJ);
         const size = SHOW_INVISIBLES ? 3 : 0;
         this.graph.addNode("tr", {
-            x: maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
-            y: 8 * 3, // maxI * SPACE_BETWEEN_COMMITS,
+            x: this.maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
+            y: this.maxY, // this.maxI * SPACE_BETWEEN_COMMITS,
             size: size, hidden: !SHOW_INVISIBLES});
         this.graph.addNode("bl", {x: 0, y: 0, size: size, hidden: !SHOW_INVISIBLES});
+        if (SHOW_INVISIBLES) {
+            this.graph.addEdge("tr", "bl", { size: 2, color: "gray", type: "line" });
+        }
     }
 
     private onTransition(index: number): boolean {
@@ -79,6 +85,7 @@ export class GraphologySlide implements Slide {
         }
         const hasMoreCommands = this.git.run();
 
+        const shiftUp = Math.max(0, this.maxY - (this.maxI * SPACE_BETWEEN_COMMITS));
         for (const commit of this.git.repo.commits) {
             if (!this.graph.hasNode(commit.sha1)) {
                 const wrapper = this.commitWrapperBySha1.get(commit.sha1);
@@ -89,7 +96,7 @@ export class GraphologySlide implements Slide {
                     this.graph.addNode(commit.sha1, {
                         label: commit.sha1 + " " + commit.msg,
                         forceLabel: true,
-                        y: wrapper.i * SPACE_BETWEEN_COMMITS,
+                        y: wrapper.i * SPACE_BETWEEN_COMMITS + shiftUp,
                         x: wrapper.j * SPACE_BETWEEN_BRANCHES,
                         size: 15,
                         color: "blue" });
@@ -105,8 +112,7 @@ export class GraphologySlide implements Slide {
         return hasMoreCommands;
     }
 
-    // Returns max(i), max(j)
-    private calculateCommitPositions(): [number, number] {
+    private calculateCommitPositions(): void {
         // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
 
         // First do a temporal topological sort, getting the i coordinates.
@@ -118,7 +124,7 @@ export class GraphologySlide implements Slide {
             commitWrappers.push(wrapper);
             this.commitWrapperBySha1.set(commit.sha1, wrapper);
         });
-        const maxI = i - 1;
+        this.maxI = i - 1;
 
         // Next wrap all of the children.
         commitWrappers.forEach(wrapper => {
@@ -132,7 +138,7 @@ export class GraphologySlide implements Slide {
 
         // Finaly get the j coordinates.
         const activeBranches: CommitWrapper[] = [];
-        let maxJ = 0;
+        this.maxJ = 0;
         console.log("Calculating j coordinates");
         for (const wrapper of commitWrappers) {
             console.log("wrapper: %s %s: i=%d", wrapper.commit.sha1, wrapper.commit.msg, wrapper.i);
@@ -157,9 +163,8 @@ export class GraphologySlide implements Slide {
                 activeBranches.push(wrapper);
             }
             wrapper.j = activeBranches.findIndex((w) => w === wrapper);
-            maxJ = Math.max(wrapper.j, maxJ);
+            this.maxJ = Math.max(wrapper.j, this.maxJ);
         }
         console.log("Done calculating j coordinates");
-        return [maxI , maxJ];
     }
 }
