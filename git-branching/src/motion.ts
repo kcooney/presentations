@@ -60,6 +60,11 @@ export function enableMotion(callback: (index: number) => boolean) {
         const hasMoreTransitions = callback(++index);
         if (!hasMoreTransitions) {
             Reveal.addKeyBinding(RIGHT_ARROW_KEY, 'next');
+
+            // Animate the right arrow (to indicate there are no more transitions).
+            const controls = document.getElementsByTagName("aside")[0];
+            const nav = controls?.querySelector('.navigate-right');
+            nav?.classList.add('highlight');
         }
     });
 }

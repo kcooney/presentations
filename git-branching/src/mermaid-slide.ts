@@ -4,10 +4,37 @@ import * as git from "./git.js";
 
 mermaid.initialize({ startOnLoad: false });
 
+class Action {
+
+    constructor(
+        private readonly action: string) {}
+
+    line(): string {
+        return this.action;
+    }
+}
+
+class TaggableAction extends Action {
+    private tag: string | null = null;
+
+    setTag(tagName: string) {
+        this.tag = tagName;
+    }
+
+    override line(): string {
+        let action = super.line();
+        if (this.tag) {
+            action += ` tag: "${this.tag}"`;
+        }
+        return action;
+    }
+}
+
 class MermaidGitCommandVisitor extends git.GitCommandVisitor {
-    readonly actions: string[] = [];
+    readonly actions: Action[] = [];
     readonly commands: string[] = [];
     head: git.Commit;
+    readonly taggableActions = new Map<string, TaggableAction>();
 
     constructor(repo: git.Repo) {
         super();
@@ -21,37 +48,48 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     override visitCommit(command: git.CommitCommand) {
         const sha1 = command.commit();
         const id = command.msg ? command.msg : sha1;
-        let action = 'commit id:"' + id + '"';
+        let line = `commit id:"${id}"`;
         if (this.head.sha1 == sha1) {
-            action += " type:HIGHLIGHT";
+            line += " type:HIGHLIGHT";
         } else if (command.reverse) {
-            action += " type:REVERSE";
+            line += " type:REVERSE";
         }
+        const action = new TaggableAction(line);
+        this.taggableActions.set(command.commit(), action);
         this.actions.push(action);
     }
 
+    override visitTag(command: git.TagCommand): void {
+        this.taggableActions.get(command.commit())?.setTag(command.tagName);
+    }
+
     override visitCheckout(command: git.CheckoutCommand) {
-        if (command.create) {
-            this.actions.push("branch " + command.branch);
+        if (!command.detachedHead()) {
+            if (command.create) {
+                this.actions.push(new Action("branch " + command.branch));
+            }
+            this.actions.push(new Action("checkout " + command.branch));
         }
-        this.actions.push("checkout " + command.branch);
     }
 
     override visitBranch(command: git.BranchCommand) {
-        this.actions.push("branch " + command.branch);
+        this.actions.push(new Action("branch " + command.branch));
     }
 
     override visitMerge(command: git.MergeCommand) {
         const sha1 = command.commit();
-        let action = 'merge ' + command.branch + ' id: "' + sha1 + '"';
+        let line = `merge ${command.branch} id: "${sha1}"`;
         if (this.head.sha1 == sha1) {
-            action += ' type: HIGHLIGHT';
+            line += ' type: HIGHLIGHT';
         }
+        const action = new TaggableAction(line);
+        this.taggableActions.set(command.commit(), action);
         this.actions.push(action);
     }
 
     graphDefinition() {
-        return ["gitGraph TB:"].concat(this.actions).join("\n   ") + "\n";
+        const lines = this.actions.map(action => action.line());
+        return ["gitGraph TB:"].concat(lines).join("\n   ") + "\n";
     }
 }
 

@@ -1,7 +1,8 @@
 import * as random from "./random.js";
 
 export class Git {
-    singleStepMode: boolean;
+    singleStepMode = false;
+    printCommands = true; // TODO: Pass this to commands.
     readonly repo: Repo;
     readonly commands: GitCommand[] = [];
     private paused = true;
@@ -10,7 +11,6 @@ export class Git {
     private readonly recordRepo: Repo;
 
     constructor(seed: string) {
-        this.singleStepMode = false;
         this.repo = new Repo(seed);
         this.recordRepo = new Repo(seed);
     }
@@ -36,6 +36,11 @@ export class Git {
 
     merge(branch: string) {
         this.enqueue(new MergeCommand(branch));
+        return this;
+    }
+
+    tag(name: string) {
+        this.enqueue(new TagCommand(name));
         return this;
     }
 
@@ -74,7 +79,7 @@ export abstract class GitCommand {
         this.sha1 = null;
     }
 
-    commit(): string {
+    commit(): string { // TODO: rename to sha1() to avoid confusion.
         if (this.sha1 === null) {
             throw Error("Cannot call commit() before execute()")
         }
@@ -122,6 +127,7 @@ export class CommitCommand extends GitCommand {
 }
 
 export class CheckoutCommand extends GitCommand {
+    private _detachedHead: boolean | undefined;
 
     constructor(
         public readonly branch: string,
@@ -130,11 +136,19 @@ export class CheckoutCommand extends GitCommand {
         super();
     }
 
+    detachedHead(): boolean {
+        if (this._detachedHead === undefined) {
+            throw Error("Cannot call detachedHead() before execute()")
+        }
+        return this._detachedHead;
+    }
+
     protected doExecute(repo: Repo) {
         if (this.create) {
             repo.branch(this.branch);
         }
         repo.checkout(this.branch);
+        this._detachedHead = !repo.currentBranch;
     }
 
     override command(): string {
@@ -194,6 +208,28 @@ export class MergeCommand extends GitCommand {
     }
 }
 
+export class TagCommand  extends GitCommand {
+
+    constructor(
+        public readonly tagName: string)
+    {
+        super();
+    }
+
+    override command(): string {
+        return "git tag " + this.tagName;
+    }
+
+    protected doExecute(repo: Repo) {
+        repo.tag(this.tagName);
+    }
+
+    override visit(visitor: GitCommandVisitor) {
+        visitor.visit(this);
+        visitor.visitTag(this);
+    }
+}
+
 export class GitCommandVisitor {
 
     visit(_command: GitCommand): void {}
@@ -205,6 +241,8 @@ export class GitCommandVisitor {
     visitBranch(_command: BranchCommand): void {}
 
     visitMerge(_command: MergeCommand): void {}
+
+    visitTag(_command: TagCommand): void {}
 }
 
 export interface Commit {
@@ -271,8 +309,9 @@ type Branches = {
 
 export class Repo {
     private _head: InternalCommit;
-    private _commits: InternalCommit[];
-    private curBranch: string;
+    private readonly _commits: InternalCommit[];
+    private readonly commitMap = new Map<string, InternalCommit>();
+    private curBranch: string; // An empty string for "detached head"
     private readonly rand: random.Random;
     private branches: Branches; // TODO: Use Map; see https://howtodoinjava.com/typescript/maps/
 
@@ -286,6 +325,10 @@ export class Repo {
 
     get head(): Commit {
         return this._head;
+    }
+
+    get currentBranch(): string | undefined {
+        return this.curBranch || undefined;
     }
 
     get commits(): Commit[] {
@@ -323,38 +366,61 @@ export class Repo {
         return c;
     }
 
+    tag(_name: string) {
+    }
+
     private _commit(msg: string): InternalCommit {
+        if (!this.curBranch) {
+            throw Error('Cannot commit in "detached head" mode');
+        }
         const t = this._commits.length + 1;
         const c = new InternalCommit(msg, this.rand.nextHex(), t);
         this._commits.push(c);
+        this.commitMap.set(c.sha1, c);
         this.branches[this.curBranch] = c;
         this._head = c;
         return c;
     }
 
     branch(name: string) {
+        if (!name) {
+            throw Error("Branch names cannot be emtpy");
+        }
         if (name in this.branches) {
             throw Error("Already a branch with name '" + name + "'");
         }
         this.branches[name] = this._head;
     }
 
-    merge(branch: string) {
-        const branchHead = this.branches[branch];
-        if (branchHead === undefined) {
-            throw Error("No branch with name '" + branch + "'");
+    merge(ref: string) {
+        if (!ref) {
+            throw Error('Merge "" - not something we can merge');
         }
-        const c = this.commit("Merge " + branch);
-        c.addParent(branchHead);
+        let commit = this.branches[ref];
+        if (!commit) {
+            commit = this.commitMap.get(ref);
+            if (!commit) {
+                throw Error(`Merge ${ref} - not something we can merge`);
+            }
+        }
+        const c = this.commit("Merge " + ref);
+        c.addParent(commit);
         return c;
     }
 
-    checkout(id: string) {
-        const branchHead = this.branches[id];
-        if (branchHead === undefined) {
-            throw Error("No branch with name '" + id + "'");
+    checkout(ref: string) {
+        if (!ref) {
+            throw Error("Empty string is not a valid pathspec");
         }
-        this._head = branchHead;
-        this.curBranch = id;
+        let newHead = this.branches[ref];
+        if (!newHead) {
+            newHead = this.commitMap.get(ref);
+            if (!newHead) {
+                throw Error(`pathspec '${ref}' did not match any file(s) known to git`)
+            }
+            ref = "";
+        }
+        this._head = newHead;
+        this.curBranch = ref;
     }
 }
