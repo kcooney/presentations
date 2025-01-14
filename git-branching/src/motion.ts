@@ -67,23 +67,17 @@ export function enableMotion(callback: (index: number) => boolean) {
 Reveal.on("slidechanged", (event: SlideChangedEvent) => {
     Reveal.addKeyBinding(RIGHT_ARROW_KEY, "next");
     Reveal.addKeyBinding(LEFT_ARROW_KEY, "prev");
-    if (event.previousSlide.id in slides) {
-        slides[event.previousSlide.id].onHideSlide();
-    }
-    if (event.currentSlide.id in slides) {
-        slides[event.currentSlide.id].onShowSlide();
-    }
+    slides[event.previousSlide.id]?.onHideSlide();
+    slides[event.currentSlide.id]?.onShowSlide();
 });
 
 Reveal.on("ready", (event: ReadyEvent) => {
-    for (const sectionId in initializers) {
+    for (const [sectionId, initializer] of Object.entries(initializers)) {
         const element = document.getElementById(sectionId)
         if (!element) {
             throw new Error(`No element with ID '${sectionId}'`)
         }
-        slides[sectionId] = initializers[sectionId](element);
+        slides[sectionId] = initializer(element);
     }
-    if (event.currentSlide.id in slides) {
-        slides[event.currentSlide.id].onShowSlide();
-    }
+    slides[event.currentSlide.id]?.onShowSlide();
 });

@@ -60,7 +60,7 @@ export class Git {
             this.queue.push([]);
             this.paused = false;
         }
-        this.queue[this.queue.length - 1].push(command);
+        this.queue[this.queue.length - 1]!.push(command);
         if (this.singleStepMode) {
             this.pause();
         }
@@ -340,19 +340,21 @@ export class Repo {
     }
 
     merge(branch: string) {
-        if (!(branch in this.branches)) {
+        const branchHead = this.branches[branch];
+        if (branchHead === undefined) {
             throw Error("No branch with name '" + branch + "'");
         }
         const c = this.commit("Merge " + branch);
-        c.addParent(this.branches[branch]);
+        c.addParent(branchHead);
         return c;
     }
 
     checkout(id: string) {
-        if (!(id in this.branches)) {
+        const branchHead = this.branches[id];
+        if (branchHead === undefined) {
             throw Error("No branch with name '" + id + "'");
         }
-        this._head = this.branches[id];
+        this._head = branchHead;
         this.curBranch = id;
     }
 }

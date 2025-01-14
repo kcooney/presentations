@@ -5,6 +5,8 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
+  eslint.configs.recommended,
+  tseslint.configs.strict,
   {
     "files": ["**/*.ts"],
     "languageOptions": { globals: globals.browser },
@@ -23,8 +25,7 @@ export default tseslint.config(
       ],
       "no-empty-function": "off",
       "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
-  },
-  eslint.configs.recommended,
-  tseslint.configs.strict,
+  }
 );
