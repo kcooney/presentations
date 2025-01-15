@@ -46,7 +46,7 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     }
 
     override visitCommit(command: git.CommitCommand) {
-        const sha1 = command.commit();
+        const sha1 = command.sha1;
         const id = command.msg ? command.msg : sha1;
         let line = `commit id:"${id}"`;
         if (this.head.sha1 == sha1) {
@@ -55,12 +55,12 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
             line += " type:REVERSE";
         }
         const action = new TaggableAction(line);
-        this.taggableActions.set(command.commit(), action);
+        this.taggableActions.set(command.sha1, action);
         this.actions.push(action);
     }
 
     override visitTag(command: git.TagCommand): void {
-        this.taggableActions.get(command.commit())?.setTag(command.tagName);
+        this.taggableActions.get(command.sha1)?.setTag(command.tagName);
     }
 
     override visitCheckout(command: git.CheckoutCommand) {
@@ -77,13 +77,13 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     }
 
     override visitMerge(command: git.MergeCommand) {
-        const sha1 = command.commit();
+        const sha1 = command.sha1;
         let line = `merge ${command.branch} id: "${sha1}"`;
         if (this.head.sha1 == sha1) {
             line += ' type: HIGHLIGHT';
         }
         const action = new TaggableAction(line);
-        this.taggableActions.set(command.commit(), action);
+        this.taggableActions.set(command.sha1, action);
         this.actions.push(action);
     }
 

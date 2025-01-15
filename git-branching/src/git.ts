@@ -73,22 +73,18 @@ export class Git {
 }
 
 export abstract class GitCommand {
-    private sha1: string | null;
+    private _sha1: string | null = null;
 
-    constructor() {
-        this.sha1 = null;
-    }
-
-    commit(): string { // TODO: rename to sha1() to avoid confusion.
-        if (this.sha1 === null) {
+    get sha1(): string {
+        if (this._sha1 === null) {
             throw Error("Cannot call commit() before execute()")
         }
-        return this.sha1 || "";
+        return this._sha1 || "";
     }
 
     execute(repo: Repo) {
         this.doExecute(repo);
-        this.sha1 = repo.head.sha1;
+        this._sha1 = repo.head.sha1;
     }
 
     protected abstract doExecute(_repo: Repo): void;
