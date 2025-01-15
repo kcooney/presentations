@@ -299,23 +299,18 @@ class InternalCommit implements Commit {
     }
 }
 
-type Branches = {
-    [key: string]: InternalCommit;
-};
-
 export class Repo {
     private _head: InternalCommit;
     private readonly _commits: InternalCommit[];
     private readonly commitMap = new Map<string, InternalCommit>();
-    private curBranch: string; // An empty string for "detached head"
     private readonly rand: random.Random;
-    private branches: Branches; // TODO: Use Map; see https://howtodoinjava.com/typescript/maps/
+    private readonly branches = new Map<string, InternalCommit>();
+    private curBranch: string; // An empty string for "detached head"
 
     constructor(seed: string) {
         this._commits = []
         this.rand = new random.SplitMix32(random.hash32(seed));
         this.curBranch = "main";
-        this.branches = {};
         this._head = this._commit("First commit");
     }
 
@@ -373,7 +368,7 @@ export class Repo {
         const c = new InternalCommit(msg, this.rand.nextHex(), t);
         this._commits.push(c);
         this.commitMap.set(c.sha1, c);
-        this.branches[this.curBranch] = c;
+        this.branches.set(this.curBranch, c);
         this._head = c;
         return c;
     }
@@ -382,17 +377,17 @@ export class Repo {
         if (!name) {
             throw Error("Branch names cannot be emtpy");
         }
-        if (name in this.branches) {
+        if (this.branches.has(name)) {
             throw Error("Already a branch with name '" + name + "'");
         }
-        this.branches[name] = this._head;
+        this.branches.set(name, this._head);
     }
 
     merge(ref: string) {
         if (!ref) {
             throw Error('Merge "" - not something we can merge');
         }
-        let commit = this.branches[ref];
+        let commit = this.branches.get(ref);
         if (!commit) {
             commit = this.commitMap.get(ref);
             if (!commit) {
@@ -408,7 +403,7 @@ export class Repo {
         if (!ref) {
             throw Error("Empty string is not a valid pathspec");
         }
-        let newHead = this.branches[ref];
+        let newHead = this.branches.get(ref);
         if (!newHead) {
             newHead = this.commitMap.get(ref);
             if (!newHead) {

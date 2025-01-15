@@ -3,17 +3,12 @@ import Reveal from 'reveal.js';
 const RIGHT_ARROW_KEY = 39;
 const LEFT_ARROW_KEY = 37;
 
-type Slides = {
-  [key: string] : Slide;
-};
-const slides: Slides = {};
+let receivedReadyEvent = false;
+const slides = new Map<string, Slide>();
 
 type Initializer = (section: HTMLElement) => Slide;
 
-type Initializers = {
-    [key: string] : Initializer;
-  };
-const initializers: Initializers = {};
+const initializers = new Map<string, Initializer>();
 
 interface ReadyEvent extends Event {
     currentSlide: HTMLElement
@@ -42,10 +37,10 @@ export interface Slide {
 };
 
 export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
-    if (slides.length) {
+    if (receivedReadyEvent) {
         throw new Error("Cannot call addSlide() after ReadyEvent")
     }
-    initializers[sectionId] = callback;
+    initializers.set(sectionId, callback);
 }
 
 export function enableMotion(callback: (index: number) => boolean) {
@@ -72,17 +67,18 @@ export function enableMotion(callback: (index: number) => boolean) {
 Reveal.on("slidechanged", (event: SlideChangedEvent) => {
     Reveal.addKeyBinding(RIGHT_ARROW_KEY, "next");
     Reveal.addKeyBinding(LEFT_ARROW_KEY, "prev");
-    slides[event.previousSlide.id]?.onHideSlide();
-    slides[event.currentSlide.id]?.onShowSlide();
+    slides.get(event.previousSlide.id)?.onHideSlide();
+    slides.get(event.currentSlide.id)?.onShowSlide();
 });
 
 Reveal.on("ready", (event: ReadyEvent) => {
-    for (const [sectionId, initializer] of Object.entries(initializers)) {
+    receivedReadyEvent = true;
+    initializers.forEach((initializer, sectionId) => {
         const element = document.getElementById(sectionId)
         if (!element) {
             throw new Error(`No element with ID '${sectionId}'`)
         }
-        slides[sectionId] = initializer(element);
-    }
-    slides[event.currentSlide.id]?.onShowSlide();
+        slides.set(sectionId,initializer(element));
+    });
+    slides.get(event.currentSlide.id)?.onShowSlide();
 });
