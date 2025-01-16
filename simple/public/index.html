@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sample reveal.js Typescript Deck</title>
+    <!-- Reveal.js -->
+    <link rel="stylesheet" href="reveal.js/dist/reset.css">
+    <link rel="stylesheet" href="reveal.js/dist/reveal.css">
+    <link rel="stylesheet" href="reveal.js/dist/theme/simple.css">
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="reveal.js/plugin/highlight/monokai.css">
+
+    <script type="module" src="bundle.js"></script>
+
+    <style>
+      .reveal h2 {
+	    font-size: 70px
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+	    <section data-markdown data-background-gradient="radial-gradient(#3177eeff, #113d8aff)">
+	      <textarea data-template>
+	        # Sample reveal.js Typescript Deck
+
+	        Kevin W. Cooney - https://github.com/kcooney
+
+
+	        ---
+	        - Use the forward arrow key to see transitions
+	        - Use the arrows to change slides
+	      </textarea>
+	    </section>
+	    <section>
+		  <h2>Setup</h2>
+		  <pre><code data-trim data-noescape>
+$ npm init
+$ npm i --global typescript
+$ npm i reveal.js
+$ npm i --save-dev @types/reveal.js
+$ npm install --save-exact --save-dev esbuild
+$ mkdir public
+$ cd public
+$ ln -s ../node_modules/reveal.js
+$ cd -
+$ cat > .gitignore
+node_modules/
+dist/
+^D
+$ # create ßtsconfig.json
+$ tsc
+	      </code></pre>
+	    </section>
+	    <section data-markdown>
+	      <textarea data-template>
+	        ## References and Resources
+	        - [reveal.js](https://revealjs.com) - HTML presentation framework
+			- [Front-end with TypeScript Tutorial](https://techblog.topdesk.com/coding/front-end-with-typescript-tutorial-step-1-to-3-minimal-typescript/)
+	      </textarea>
+	    </section>
+      </div>
+    </div>
+  </body>
+</html>
