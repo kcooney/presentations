@@ -1,18 +1,16 @@
 {
   "name": "simple",
   "version": "1.0.0",
-  "description": "Simple slide example",
   "main": "index.js",
   "scripts": {
     "compile": "tsc",
     "prebundle": "tsc",
-    "bundle": "esbuild ./dist/index.js --bundle --sourcemap --outfile=public/bundle.js",
+    "bundle": "esbuild ./dist/index.js --bundle --platform=node --sourcemap --outfile=public/bundle.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Kevin W. Cooney",
-  "license": "EPL-2.0",
   "dependencies": {
-    "reveal.js": "^5.1.0"
+    "reveal.js": "^5.1.0",
+    "reveal.js-menu": "^2.1.0"
   },
   "devDependencies": {
     "@types/reveal.js": "^5.0.4",

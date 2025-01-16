@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "paths": {
+      "*": ["./typings/*"]
+    },
+    "module": "es6",
+    "target": "es6",
     "moduleResolution": "node",
+    "noImplicitAny": true,
     "esModuleInterop": true,
+    "isolatedModules": true,
     "sourceMap": true,
     "outDir": "dist"
   },

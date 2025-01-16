@@ -52,6 +52,19 @@ $ # create ßtsconfig.json
 $ tsc
 	      </code></pre>
 	    </section>
+		<section>
+			<h2>Adding a Plugin</h2>
+			<pre><code data-trim data-noescape>
+$ npm install --save reveal.js-menu
+$ mkdir typings
+$ cat > typings/reveal.js-menu.d.ts
+declare module 'reveal.js-menu' {
+	const RevealMenu: Reveal.PluginFunction;
+	export default RevealMenu;
+}
+^D
+			</code></pre>
+		  </section>
 	    <section data-markdown>
 	      <textarea data-template>
 	        ## References and Resources
