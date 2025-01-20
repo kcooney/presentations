@@ -54,7 +54,7 @@ export class GraphologySlide implements Slide {
     }
 
     protected record(git: Git): void {
-        git.commit().checkout("develop", true).commit();
+        git.commit().checkout("develop", {createBranch: true}).commit();
         git.singleStepMode = false;
         git.commit().commit().pause();
         git.checkout("main").pause();

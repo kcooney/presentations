@@ -29,8 +29,8 @@ export class Git {
         return this;
     }
 
-    checkout(branch: string, create = false) {
-        this.enqueue(new CheckoutCommand(branch, create));
+    checkout(branch: string, { createBranch = false } = {}) {
+        this.enqueue(new CheckoutCommand(branch, createBranch));
         return this;
     }
 
@@ -127,7 +127,7 @@ export class CheckoutCommand extends GitCommand {
 
     constructor(
         public readonly branch: string,
-        public readonly create = false)
+        public readonly createBranch = false)
     {
         super();
     }
@@ -140,7 +140,7 @@ export class CheckoutCommand extends GitCommand {
     }
 
     protected doExecute(repo: Repo) {
-        if (this.create) {
+        if (this.createBranch) {
             repo.branch(this.branch);
         }
         repo.checkout(this.branch);
@@ -148,7 +148,7 @@ export class CheckoutCommand extends GitCommand {
     }
 
     override command(): string {
-        if (this.create) {
+        if (this.createBranch) {
             return "git checkout -b " + this.branch;
         }
         return "git checkout " + this.branch;

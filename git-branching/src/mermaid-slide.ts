@@ -65,7 +65,7 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
 
     override visitCheckout(command: git.CheckoutCommand) {
         if (!command.detachedHead()) {
-            if (command.create) {
+            if (command.createBranch) {
                 this.actions.push(new Action("branch " + command.branch));
             }
             this.actions.push(new Action("checkout " + command.branch));

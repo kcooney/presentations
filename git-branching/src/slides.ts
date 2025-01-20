@@ -18,7 +18,7 @@ class CommittingSlide extends MermaidSlide {
 class MermaidDemoSlide extends MermaidSlide {
 
     override record(git: Git): void {
-        git.commit().checkout("develop", true).commit();
+        git.commit().checkout("develop", {createBranch: true}).commit();
         git.singleStepMode = false;
         git.commit().commit().pause();
         git.checkout("main").pause();
@@ -32,7 +32,7 @@ class BranchesSlide extends MermaidSlide {
 
     override record(git: Git): void {
         git.commit({msg: "Add shooter"}).commit({msg: "Shoot faster"});
-        git.checkout("chicken/on-the-bus", true).commit({msg: "Add drive subsystem"});
+        git.checkout("chicken/on-the-bus", {createBranch: true}).commit({msg: "Add drive subsystem"});
 
         git.singleStepMode = false;
         git.printCommands = false;
@@ -59,12 +59,12 @@ class HeadSlide extends MermaidSlide {
         const addShooterCommit = git.repo.head.sha1;
         git.commit({msg: "Shoot faster"});
         git.singleStepMode = false;
-        git.checkout("chicken/on-the-bus", true).commit({msg: "Add drive subsystem"}).pause();
+        git.checkout("chicken/on-the-bus", {createBranch: true}).commit({msg: "Add drive subsystem"}).pause();
         git.printCommands = false;
         git.checkout("main").commit({msg: "Add intake"}).checkout("chicken/on-the-bus").pause();
         git.printCommands = true;
         git.singleStepMode = true;
-        git.checkout(addShooterCommit).checkout("monkey/bug-fix", true).commit({msg: "Fix shooter angle"});
+        git.checkout(addShooterCommit).checkout("monkey/bug-fix", {createBranch: true}).commit({msg: "Fix shooter angle"});
         git.commit({msg: "One more fix"});
 
     }
