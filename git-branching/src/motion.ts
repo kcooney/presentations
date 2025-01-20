@@ -6,7 +6,7 @@ const LEFT_ARROW_KEY = 37;
 let receivedReadyEvent = false;
 const slides = new Map<string, Slide>();
 
-type Initializer = (section: HTMLElement) => Slide;
+type Initializer = () => Slide | null;
 
 const initializers = new Map<string, Initializer>();
 
@@ -30,7 +30,6 @@ declare global {
     }
 }
 
-
 export interface Slide {
     onShowSlide(): void;
     onHideSlide(): void;
@@ -38,9 +37,24 @@ export interface Slide {
 
 export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
     if (receivedReadyEvent) {
-        throw new Error("Cannot call addSlide() after ReadyEvent")
+        throw new Error("Cannot call addSlide() after Reveal.initialize()")
     }
-    initializers.set(sectionId, callback);
+    const element = document.getElementById(sectionId);
+    if (!element) {
+        throw new Error(`No element with ID '${sectionId}'`)
+    }
+
+    // If the slide has data-visibility="hidden" it may be removed by Reveal
+    // when Reveal.initialize() is called, so we need to make sure it is
+    // connected to the DOM before calling the callback.
+    const initializer = () => {
+        if (element.isConnected) {
+            return callback(element);
+        }
+        return null;
+    };
+
+    initializers.set(sectionId, initializer);
 }
 
 export function enableMotion(callback: (index: number) => boolean) {
@@ -74,11 +88,10 @@ Reveal.on("slidechanged", (event: SlideChangedEvent) => {
 Reveal.on("ready", (event: ReadyEvent) => {
     receivedReadyEvent = true;
     initializers.forEach((initializer, sectionId) => {
-        const element = document.getElementById(sectionId)
-        if (!element) {
-            throw new Error(`No element with ID '${sectionId}'`)
+        const slide = initializer();
+        if (slide !== null) {
+            slides.set(sectionId, slide);
         }
-        slides.set(sectionId,initializer(element));
     });
     slides.get(event.currentSlide.id)?.onShowSlide();
 });
