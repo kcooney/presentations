@@ -305,6 +305,7 @@ export class Repo {
     private readonly commitMap = new Map<string, InternalCommit>();
     private readonly rand: random.Random;
     private readonly branches = new Map<string, InternalCommit>();
+    private readonly tags = new Map<string, InternalCommit>();
     private curBranch: string; // An empty string for "detached head"
 
     constructor(seed: string) {
@@ -357,7 +358,14 @@ export class Repo {
         return c;
     }
 
-    tag(_name: string) {
+    tag(name: string) {
+        if (!name) {
+            throw Error("Tag names cannot be emtpy");
+        }
+        if (this.tags.has(name)) {
+            throw Error("Already a tag with name '" + name + "'");
+        }
+        this.tags.set(name, this._head);
     }
 
     private _commit(msg: string): InternalCommit {
