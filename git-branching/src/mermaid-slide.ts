@@ -125,7 +125,7 @@ export class MermaidSlide implements Slide {
     private resetSlide() {
         this.git.checkout("main");
         this.git.singleStepMode = true;
-        this.git.commit("Initial commit message");
+        this.git.commit({msg: "Initial commit message"});
         this.record(this.git);
     }
 

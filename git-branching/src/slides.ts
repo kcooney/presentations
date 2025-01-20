@@ -9,9 +9,9 @@ class CommittingSlide extends MermaidSlide {
     count = 0;
 
     override record(git: Git): void {
-        git.commit("Add shooter").commit("Shoot faster");
-        git.commit("Revert shoot faster", true);
-        git.commit("Use gyro");
+        git.commit({msg: "Add shooter"}).commit({msg: "Shoot faster"});
+        git.commit({msg: "Revert shoot faster", reverse:true});
+        git.commit({msg: "Use gyro"});
     }
 }
 
@@ -31,41 +31,41 @@ class MermaidDemoSlide extends MermaidSlide {
 class BranchesSlide extends MermaidSlide {
 
     override record(git: Git): void {
-        git.commit("Add shooter").commit("Shoot faster");
-        git.checkout("chicken/on-the-bus", true).commit("Add drive subsystem");
+        git.commit({msg: "Add shooter"}).commit({msg: "Shoot faster"});
+        git.checkout("chicken/on-the-bus", true).commit({msg: "Add drive subsystem"});
 
         git.singleStepMode = false;
         git.printCommands = false;
-        git.checkout("main").commit("Add intake");
+        git.checkout("main").commit({msg: "Add intake"});
         git.checkout("chicken/on-the-bus").pause()
         git.printCommands = true;
-        git.commit("Let me drive the bus!").commit("Fix shooter angle").pause();
+        git.commit({msg: "Let me drive the bus!"}).commit({msg: "Fix shooter angle"}).pause();
     }
 }
 
 class TaggingSlide extends MermaidSlide {
 
     override record(git: Git): void {
-        git.commit("Add shooter");
+        git.commit({msg: "Add shooter"});
         git.tag("v1.0");
-        git.commit("Shoot faster");
+        git.commit({msg: "Shoot faster"});
     }
 }
 
 class HeadSlide extends MermaidSlide {
 
     override record(git: Git): void {
-        git.commit("Add shooter");
+        git.commit({msg: "Add shooter"});
         const addShooterCommit = git.repo.head.sha1;
-        git.commit("Shoot faster");
+        git.commit({msg: "Shoot faster"});
         git.singleStepMode = false;
-        git.checkout("chicken/on-the-bus", true).commit("Add drive subsystem").pause();
+        git.checkout("chicken/on-the-bus", true).commit({msg: "Add drive subsystem"}).pause();
         git.printCommands = false;
-        git.checkout("main").commit("Add intake").checkout("chicken/on-the-bus").pause();
+        git.checkout("main").commit({msg: "Add intake"}).checkout("chicken/on-the-bus").pause();
         git.printCommands = true;
         git.singleStepMode = true;
-        git.checkout(addShooterCommit).checkout("monkey/bug-fix", true).commit("Fix shooter angle");
-        git.commit("One more fix");
+        git.checkout(addShooterCommit).checkout("monkey/bug-fix", true).commit({msg: "Fix shooter angle"});
+        git.commit({msg: "One more fix"});
 
     }
 }

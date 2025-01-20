@@ -19,7 +19,7 @@ export class Git {
         this.paused = true;
     }
 
-    commit(msg = "", reverse = false) {
+    commit({ msg = "", reverse = false } = {}) {
         this.enqueue(new CommitCommand(msg, reverse));
         return this;
     }
