@@ -248,6 +248,8 @@ export interface Commit {
 
     get parents(): ReadonlyArray<Commit>;
 
+    get tags(): ReadonlyArray<string>;
+
     branchChildren(): Commit[];
 
     mergeChildren(): Commit[];
@@ -256,6 +258,7 @@ export interface Commit {
 class InternalCommit implements Commit {
     private readonly _parents: InternalCommit[] = [];
     private readonly children: WeakRef<InternalCommit>[] = [];
+    private readonly _tags: string[] = [];
 
     constructor(
         public readonly msg: string,
@@ -281,6 +284,14 @@ class InternalCommit implements Commit {
     addParent(commit: InternalCommit) {
         this._parents.push(commit);
         commit.children.push(new WeakRef(this));
+    }
+
+    get tags(): Readonly<Array<string>> {
+        return this._tags;
+    }
+
+    addTag(label: string) {
+        this._tags.push(label);
     }
 
     private forEachChild(callback: (commit: InternalCommit) => void) {
@@ -366,6 +377,7 @@ export class Repo {
             throw Error("Already a tag with name '" + name + "'");
         }
         this.tags.set(name, this._head);
+        this._head.addTag(name);
     }
 
     private _commit(msg: string): InternalCommit {
