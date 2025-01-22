@@ -1,5 +1,8 @@
 import Graph from "graphology";
 import Sigma from "sigma";
+import {createNodeCompoundProgram, drawDiscNodeHover, NodeCircleProgram} from "sigma/rendering";
+import {Settings} from "sigma/settings";
+import {NodeDisplayData, PartialButFor} from "sigma/types"
 import {Slide, enableMotion} from "./motion.js";
 import {Commit, Git} from "./git.js";
 
@@ -31,13 +34,16 @@ export class GraphologySlide implements Slide {
     private maxI = 0;
     private maxJ = 0;
 
-    constructor(section: HTMLElement) {
-       this.seed = section.id;
-       this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
-       this.sigmaContainer = section.getElementsByClassName("sigma-container")[0] as HTMLElement;
-       this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
-       this.graph = new Graph({type: "directed", allowSelfLoops: false});
-       this.git = new Git(this.seed);
+    constructor(
+        section: HTMLElement,
+        private readonly showHead = false)
+    {
+        this.seed = section.id;
+        this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
+        this.sigmaContainer = section.getElementsByClassName("sigma-container")[0] as HTMLElement;
+        this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
+        this.graph = new Graph({type: "directed", allowSelfLoops: false});
+        this.git = new Git(this.seed);
     }
 
     onShowSlide() {
@@ -57,6 +63,7 @@ export class GraphologySlide implements Slide {
         git.commit().checkout("develop", {createBranch: true}).commit();
         git.singleStepMode = false;
         git.commit().commit().pause();
+        git.tag("origin/develop").pause();
         git.checkout("main").pause();
         git.merge("develop").pause();
         git.commit().pause()
@@ -74,6 +81,9 @@ export class GraphologySlide implements Slide {
         this.calculateCommitPositions();
         this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer, {
             autoCenter: false,
+            nodeProgramClasses: {
+                "commit": NodeCommitProgram,
+            },
         });
         console.log("maxI=%d; maxJ=%d", this.maxI, this.maxJ);
         const size = SHOW_INVISIBLES ? 3 : 0;
@@ -92,6 +102,7 @@ export class GraphologySlide implements Slide {
             this.git = new Git(this.seed);
             this.resetSlide();
         }
+        const prevHead = this.git.repo.head;
         const hasMoreCommands = this.git.run();
 
         const shiftUp = Math.max(0, this.maxY - (this.maxI * SPACE_BETWEEN_COMMITS));
@@ -104,8 +115,8 @@ export class GraphologySlide implements Slide {
                     console.log("%s %s - i=%d; j=%d", commit.sha1, commit.msg, wrapper.i, wrapper.j);
                     const color = COLORS[wrapper.j % COLORS.length]
                     this.graph.addNode(commit.sha1, {
-                        label: commit.sha1 + " " + commit.msg,
-                        forceLabel: true,
+                        type: "commit",
+                        hover: commit.msg ? commit.sha1 + " " + commit.msg : commit.sha1,
                         y: wrapper.i * SPACE_BETWEEN_COMMITS + shiftUp,
                         x: wrapper.j * SPACE_BETWEEN_BRANCHES,
                         size: 15,
@@ -117,6 +128,15 @@ export class GraphologySlide implements Slide {
                 }
             }
         }
+        if (prevHead !== this.git.repo.head) {
+            this.graph.removeNodeAttribute(prevHead.sha1, "label");
+            this.graph.setNodeAttribute(prevHead.sha1, "forceLabel", false);
+        }
+        if (this.showHead) {
+            this.graph.setNodeAttribute(this.git.repo.head.sha1, "label", "⇠ HEAD");
+            this.graph.setNodeAttribute(this.git.repo.head.sha1, "forceLabel", true);
+        }
+
         const commands = this.git.commands.map(command => command.command());
         this.code.innerHTML = "$ " + commands.join("<br />$ ");
         return hasMoreCommands;
@@ -176,5 +196,27 @@ export class GraphologySlide implements Slide {
             this.maxJ = Math.max(wrapper.j, this.maxJ);
         }
         console.log("Done calculating j coordinates");
+    }
+}
+
+const NodeCommitProgram = createNodeCompoundProgram([NodeCircleProgram], undefined, drawCommitNodeHover);
+
+function drawCommitNodeHover(
+    context: CanvasRenderingContext2D,
+    data: PartialButFor<NodeDisplayData, "x" | "y" | "size" | "label" | "color">,
+    settings: Settings,
+): void {
+    if ("hover" in data && typeof data.hover === "string") {
+        const label = data.label;
+        if (label) {
+            data.label = data.hover + " " + data.label;
+        } else {
+            data.label = data.hover;
+        }
+        try {
+            drawDiscNodeHover(context, data, settings);
+        } finally {
+            data.label = label;
+        }
     }
 }
