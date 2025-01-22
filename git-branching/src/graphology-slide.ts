@@ -85,7 +85,6 @@ export class GraphologySlide implements Slide {
                 "commit": NodeCommitProgram,
             },
         });
-        console.log("maxI=%d; maxJ=%d", this.maxI, this.maxJ);
         const size = SHOW_INVISIBLES ? 3 : 0;
         this.graph.addNode("tr", {
             x: this.maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
@@ -112,7 +111,6 @@ export class GraphologySlide implements Slide {
                 if (!wrapper) {
                     console.log("Could not find wrapper for '%s'", commit.sha1);
                 } else {
-                    console.log("%s %s - i=%d; j=%d", commit.sha1, commit.msg, wrapper.i, wrapper.j);
                     const color = COLORS[wrapper.j % COLORS.length]
                     this.graph.addNode(commit.sha1, {
                         type: "commit",
@@ -169,12 +167,9 @@ export class GraphologySlide implements Slide {
         // Finaly get the j coordinates.
         const activeBranches: CommitWrapper[] = [];
         this.maxJ = 0;
-        console.log("Calculating j coordinates");
         for (const wrapper of commitWrappers) {
-            console.log("wrapper: %s %s: i=%d", wrapper.commit.sha1, wrapper.commit.msg, wrapper.i);
             let child = wrapper.branchChildren.pop();
             if (child) {
-                console.log("%s's first child: %s %s", wrapper.commit.sha1, child.commit.sha1, child.commit.msg);
                 let index = activeBranches.findIndex((w) => w === child);
                 if (index >= 0) {
                     activeBranches[index] = wrapper;
@@ -189,13 +184,11 @@ export class GraphologySlide implements Slide {
                     child = wrapper.branchChildren.pop();
                 }
             } else {
-                console.log("%s: no children", wrapper.commit.sha1);
                 activeBranches.push(wrapper);
             }
             wrapper.j = activeBranches.findIndex((w) => w === wrapper);
             this.maxJ = Math.max(wrapper.j, this.maxJ);
         }
-        console.log("Done calculating j coordinates");
     }
 }
 
