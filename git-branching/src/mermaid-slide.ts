@@ -1,5 +1,5 @@
 import mermaid from "mermaid";
-import {Slide, enableMotion} from "./motion.js";
+import {Slide, addSlide, enableMotion, failWith} from "./motion.js";
 import * as git from "./git.js";
 
 mermaid.initialize({ startOnLoad: false });
@@ -99,12 +99,26 @@ export class MermaidSlide implements Slide {
     private readonly mermaidElement: HTMLElement;
     private readonly seed: string;
     private git: git.Git
+
+    static add(sectionId: string, recorder: (git: git.Git) => void): void {
+        addSlide(sectionId, section => {
+            return new class extends MermaidSlide {
+                protected override record(git: git.Git): void {
+                    recorder(git);
+                }
+            }(section);
+        });
+    }
     
-    constructor(section: HTMLElement) {
+    private constructor(section: HTMLElement) {
         this.seed = section.id;
-        this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
-        this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
-        this.mermaidElement = this.gitContainer.getElementsByClassName("mermaid")[0] as HTMLElement;
+        this.gitContainer = section.querySelector(".git-container") ?? failWith(
+            () => `No element with class "git-container" inside ${section.id}`);
+        this.code = section.querySelector("code") ?? failWith(
+            () => `No "code" element inside ${section.id}`);
+        this.mermaidElement = section.querySelector(".git-diagram") ?? failWith(
+            () => `No element with class "git-diagram" inside ${section.id}`);
+        this.mermaidElement.classList.add("mermaid");
         this.git = new git.Git(this.seed);
     }
 

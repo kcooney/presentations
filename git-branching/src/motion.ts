@@ -35,6 +35,13 @@ export interface Slide {
     onHideSlide(): void;
 };
 
+export function failWith(errorMessage: string | (() => string)): never {
+    if (typeof errorMessage === "string") {
+        throw new Error(errorMessage);
+    }
+    throw new Error(errorMessage());
+}
+
 export function addSlide(sectionId: string, callback: (section: HTMLElement) => Slide) {
     if (receivedReadyEvent) {
         throw new Error("Cannot call addSlide() after Reveal.initialize()")

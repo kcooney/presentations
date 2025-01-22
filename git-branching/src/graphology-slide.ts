@@ -3,7 +3,7 @@ import Sigma from "sigma";
 import {createNodeCompoundProgram, drawDiscNodeHover, NodeCircleProgram} from "sigma/rendering";
 import {Settings} from "sigma/settings";
 import {NodeDisplayData, PartialButFor} from "sigma/types"
-import {Slide, enableMotion} from "./motion.js";
+import {Slide, addSlide, enableMotion, failWith} from "./motion.js";
 import {Commit, Git} from "./git.js";
 
 const SPACE_BETWEEN_COMMITS = 3;
@@ -27,6 +27,7 @@ export class GraphologySlide implements Slide {
     private readonly code: HTMLElement;
     private readonly graph: Graph;
     private readonly seed: string;
+    private readonly showHead: boolean;
     private readonly commitWrapperBySha1 = new Map<string, CommitWrapper>();
     private readonly maxY = 8 * 3;
     private sigmaInstance: Sigma | undefined;
@@ -34,16 +35,25 @@ export class GraphologySlide implements Slide {
     private maxI = 0;
     private maxJ = 0;
 
-    constructor(
-        section: HTMLElement,
-        private readonly showHead = false)
-    {
+    static add(sectionId: string, { showHead = false } = {}, recorder: (git: Git) => void): void {
+        addSlide(sectionId, section => {
+            return new class extends GraphologySlide {
+                protected override record(git: Git): void {
+                    recorder(git);
+                }
+            }(section, {showHead: showHead});
+        });
+    }
+
+    private constructor(section: HTMLElement, { showHead }: { showHead: boolean }) {
         this.seed = section.id;
-        this.gitContainer = section.getElementsByClassName("git-container")[0] as HTMLElement;
-        this.sigmaContainer = section.getElementsByClassName("sigma-container")[0] as HTMLElement;
-        this.code = this.gitContainer.getElementsByTagName("code")[0] as HTMLElement;
+        this.gitContainer = section.querySelector(".git-container") ?? failWith('No element with class "git-container"');
+        this.sigmaContainer = section.querySelector(".git-diagram") ?? failWith('No element with class "git-diagram"');
+        this.sigmaContainer.classList.add("sigma-container");
+        this.code = this.gitContainer.querySelector("code") ?? failWith(() => `No code inside ${this.gitContainer}`);
         this.graph = new Graph({type: "directed", allowSelfLoops: false});
         this.git = new Git(this.seed);
+        this.showHead = showHead;
     }
 
     onShowSlide() {
@@ -59,16 +69,7 @@ export class GraphologySlide implements Slide {
         this.git = new Git(this.seed);
     }
 
-    protected record(git: Git): void {
-        git.commit().checkout("develop", {createBranch: true}).commit();
-        git.singleStepMode = false;
-        git.commit().commit().pause();
-        git.tag("origin/develop").pause();
-        git.checkout("main").pause();
-        git.merge("develop").pause();
-        git.commit().pause()
-        git.commit();
-    }
+    protected record(_git: Git): void {}
 
     private resetSlide() {
         this.sigmaInstance?.kill();
