@@ -26,6 +26,10 @@ class CommitWrapper {
   ) {}
 }
 
+type Config = {
+  showHead: boolean;
+};
+
 export class GraphologySlide implements Slide {
   private readonly gitContainer: HTMLElement;
   private readonly sigmaContainer: HTMLElement;
@@ -42,7 +46,7 @@ export class GraphologySlide implements Slide {
 
   static add(
     sectionId: string,
-    { showHead = false } = {},
+    config: Config = { showHead: false},
     recorder: (git: Git) => void,
   ): void {
     addSlide(sectionId, section => {
@@ -50,14 +54,11 @@ export class GraphologySlide implements Slide {
         protected override record(git: Git): void {
           recorder(git);
         }
-      })(section, { showHead: showHead });
+      })(section, config);
     });
   }
 
-  private constructor(
-    section: HTMLElement,
-    { showHead }: { showHead: boolean },
-  ) {
+  private constructor(section: HTMLElement, config: Config) {
     this.seed = section.id;
     this.gitContainer =
       section.querySelector(".git-container") ??
@@ -71,7 +72,7 @@ export class GraphologySlide implements Slide {
       failWith(() => `No code inside ${this.gitContainer}`);
     this.graph = new Graph({ type: "directed", allowSelfLoops: false });
     this.git = new Git(this.seed);
-    this.showHead = showHead;
+    this.showHead = config.showHead;
   }
 
   onShowSlide() {
