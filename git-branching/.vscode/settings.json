@@ -1,7 +1,7 @@
 {
-    "files.exclude": {
-        "dist/": true
-    },
-    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
-    "eslint.format.enable": true
+  "files.exclude": {
+    "dist/": true
+  },
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "eslint.format.enable": false
 }

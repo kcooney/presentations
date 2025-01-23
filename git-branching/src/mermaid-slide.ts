@@ -1,166 +1,172 @@
 import mermaid from "mermaid";
-import {Slide, addSlide, enableMotion, failWith} from "./motion.js";
+import { Slide, addSlide, enableMotion, failWith } from "./motion.js";
 import * as git from "./git.js";
 
 mermaid.initialize({ startOnLoad: false });
 
 class Action {
+  constructor(private readonly action: string) {}
 
-    constructor(
-        private readonly action: string) {}
-
-    line(): string {
-        return this.action;
-    }
+  line(): string {
+    return this.action;
+  }
 }
 
 class TaggableAction extends Action {
-    private tag: string | null = null;
+  private tag: string | null = null;
 
-    setTag(tagName: string) {
-        this.tag = tagName;
-    }
+  setTag(tagName: string) {
+    this.tag = tagName;
+  }
 
-    override line(): string {
-        let action = super.line();
-        if (this.tag) {
-            action += ` tag: "${this.tag}"`;
-        }
-        return action;
+  override line(): string {
+    let action = super.line();
+    if (this.tag) {
+      action += ` tag: "${this.tag}"`;
     }
+    return action;
+  }
 }
 
 class MermaidGitCommandVisitor extends git.GitCommandVisitor {
-    readonly actions: Action[] = [];
-    readonly commands: string[] = [];
-    head: git.Commit;
-    readonly taggableActions = new Map<string, TaggableAction>();
+  readonly actions: Action[] = [];
+  readonly commands: string[] = [];
+  head: git.Commit;
+  readonly taggableActions = new Map<string, TaggableAction>();
 
-    constructor(repo: git.Repo) {
-        super();
-        this.head = repo.head;
+  constructor(repo: git.Repo) {
+    super();
+    this.head = repo.head;
+  }
+
+  override visit(command: git.GitCommand) {
+    this.commands.push(command.command());
+  }
+
+  override visitCommit(command: git.CommitCommand) {
+    const sha1 = command.sha1;
+    const id = command.msg ? command.msg : sha1;
+    let line = `commit id:"${id}"`;
+    if (this.head.sha1 == sha1) {
+      line += " type:HIGHLIGHT";
+    } else if (command.reverse) {
+      line += " type:REVERSE";
     }
+    const action = new TaggableAction(line);
+    this.taggableActions.set(command.sha1, action);
+    this.actions.push(action);
+  }
 
-    override visit(command: git.GitCommand) {
-        this.commands.push(command.command());
-    }
+  override visitTag(command: git.TagCommand): void {
+    this.taggableActions.get(command.sha1)?.setTag(command.tagName);
+  }
 
-    override visitCommit(command: git.CommitCommand) {
-        const sha1 = command.sha1;
-        const id = command.msg ? command.msg : sha1;
-        let line = `commit id:"${id}"`;
-        if (this.head.sha1 == sha1) {
-            line += " type:HIGHLIGHT";
-        } else if (command.reverse) {
-            line += " type:REVERSE";
-        }
-        const action = new TaggableAction(line);
-        this.taggableActions.set(command.sha1, action);
-        this.actions.push(action);
-    }
-
-    override visitTag(command: git.TagCommand): void {
-        this.taggableActions.get(command.sha1)?.setTag(command.tagName);
-    }
-
-    override visitCheckout(command: git.CheckoutCommand) {
-        if (!command.detachedHead()) {
-            if (command.createBranch) {
-                this.actions.push(new Action("branch " + command.branch));
-            }
-            this.actions.push(new Action("checkout " + command.branch));
-        }
-    }
-
-    override visitBranch(command: git.BranchCommand) {
+  override visitCheckout(command: git.CheckoutCommand) {
+    if (!command.detachedHead()) {
+      if (command.createBranch) {
         this.actions.push(new Action("branch " + command.branch));
+      }
+      this.actions.push(new Action("checkout " + command.branch));
     }
+  }
 
-    override visitMerge(command: git.MergeCommand) {
-        const sha1 = command.sha1;
-        let line = `merge ${command.branch} id: "${sha1}"`;
-        if (this.head.sha1 == sha1) {
-            line += ' type: HIGHLIGHT';
-        }
-        const action = new TaggableAction(line);
-        this.taggableActions.set(command.sha1, action);
-        this.actions.push(action);
-    }
+  override visitBranch(command: git.BranchCommand) {
+    this.actions.push(new Action("branch " + command.branch));
+  }
 
-    graphDefinition() {
-        const lines = this.actions.map(action => action.line());
-        return ["gitGraph TB:"].concat(lines).join("\n   ") + "\n";
+  override visitMerge(command: git.MergeCommand) {
+    const sha1 = command.sha1;
+    let line = `merge ${command.branch} id: "${sha1}"`;
+    if (this.head.sha1 == sha1) {
+      line += " type: HIGHLIGHT";
     }
+    const action = new TaggableAction(line);
+    this.taggableActions.set(command.sha1, action);
+    this.actions.push(action);
+  }
+
+  graphDefinition() {
+    const lines = this.actions.map(action => action.line());
+    return ["gitGraph TB:"].concat(lines).join("\n   ") + "\n";
+  }
 }
 
 export class MermaidSlide implements Slide {
-    private readonly gitContainer: HTMLElement;
-    private readonly code: HTMLElement;
-    private readonly mermaidElement: HTMLElement;
-    private readonly seed: string;
-    private git: git.Git
+  private readonly gitContainer: HTMLElement;
+  private readonly code: HTMLElement;
+  private readonly mermaidElement: HTMLElement;
+  private readonly seed: string;
+  private git: git.Git;
 
-    static add(sectionId: string, recorder: (git: git.Git) => void): void {
-        addSlide(sectionId, section => {
-            return new class extends MermaidSlide {
-                protected override record(git: git.Git): void {
-                    recorder(git);
-                }
-            }(section);
-        });
-    }
-    
-    private constructor(section: HTMLElement) {
-        this.seed = section.id;
-        this.gitContainer = section.querySelector(".git-container") ?? failWith(
-            () => `No element with class "git-container" inside ${section.id}`);
-        this.code = section.querySelector("code") ?? failWith(
-            () => `No "code" element inside ${section.id}`);
-        this.mermaidElement = section.querySelector(".git-diagram") ?? failWith(
-            () => `No element with class "git-diagram" inside ${section.id}`);
-        this.mermaidElement.classList.add("mermaid");
-        this.git = new git.Git(this.seed);
-    }
-
-    onShowSlide() {
-        this.gitContainer.style.display = "block";
-        this.resetSlide();
-        enableMotion(this.onTransition.bind(this));
-        this.onTransition(-1);
-    }
-
-    onHideSlide()  {
-        this.gitContainer.style.display = "none";
-        this.git = new git.Git(this.seed);
-    }
-
-    protected record(_git: git.Git): void {}
-
-    private resetSlide() {
-        this.git.checkout("main");
-        this.git.singleStepMode = true;
-        this.git.commit({msg: "Initial commit message"});
-        this.record(this.git);
-    }
-
-    private onTransition(index: number): boolean {
-        if (index === 0) {
-            this.git = new git.Git(this.seed);
-            this.resetSlide();
+  static add(sectionId: string, recorder: (git: git.Git) => void): void {
+    addSlide(sectionId, section => {
+      return new (class extends MermaidSlide {
+        protected override record(git: git.Git): void {
+          recorder(git);
         }
-        const hasMoreCommands = this.git.run();
+      })(section);
+    });
+  }
 
-        const visitor = new MermaidGitCommandVisitor(this.git.repo);
-        this.git.commands.forEach(command => command.visit(visitor));
+  private constructor(section: HTMLElement) {
+    this.seed = section.id;
+    this.gitContainer =
+      section.querySelector(".git-container") ??
+      failWith(
+        () => `No element with class "git-container" inside ${section.id}`,
+      );
+    this.code =
+      section.querySelector("code") ??
+      failWith(() => `No "code" element inside ${section.id}`);
+    this.mermaidElement =
+      section.querySelector(".git-diagram") ??
+      failWith(
+        () => `No element with class "git-diagram" inside ${section.id}`,
+      );
+    this.mermaidElement.classList.add("mermaid");
+    this.git = new git.Git(this.seed);
+  }
 
-        const element = this.mermaidElement;
-        this.code.innerHTML = "$ " + visitor.commands.join("<br />$ ");
-        const graphDefinition = visitor.graphDefinition();
+  onShowSlide() {
+    this.gitContainer.style.display = "block";
+    this.resetSlide();
+    enableMotion(this.onTransition.bind(this));
+    this.onTransition(-1);
+  }
 
-        mermaid.render("graphDiv", graphDefinition)
-            .then(renderResult => element.innerHTML = renderResult.svg)
-            .catch(error => console.log('render error: %s', error));
+  onHideSlide() {
+    this.gitContainer.style.display = "none";
+    this.git = new git.Git(this.seed);
+  }
 
-        return hasMoreCommands;
+  protected record(_git: git.Git): void {}
+
+  private resetSlide() {
+    this.git.checkout("main");
+    this.git.singleStepMode = true;
+    this.git.commit({ msg: "Initial commit message" });
+    this.record(this.git);
+  }
+
+  private onTransition(index: number): boolean {
+    if (index === 0) {
+      this.git = new git.Git(this.seed);
+      this.resetSlide();
     }
+    const hasMoreCommands = this.git.run();
+
+    const visitor = new MermaidGitCommandVisitor(this.git.repo);
+    this.git.commands.forEach(command => command.visit(visitor));
+
+    const element = this.mermaidElement;
+    this.code.innerHTML = "$ " + visitor.commands.join("<br />$ ");
+    const graphDefinition = visitor.graphDefinition();
+
+    mermaid
+      .render("graphDiv", graphDefinition)
+      .then(renderResult => (element.innerHTML = renderResult.svg))
+      .catch(error => console.log("render error: %s", error));
+
+    return hasMoreCommands;
+  }
 }

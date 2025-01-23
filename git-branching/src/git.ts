@@ -1,437 +1,427 @@
 import * as random from "./random.js";
 
 export class Git {
-    singleStepMode = false;
-    printCommands = true; // TODO: Pass this to commands.
-    readonly repo: Repo;
-    readonly commands: GitCommand[] = [];
-    private paused = true;
-    // Queue invariant: all nested lists are non-empty.
-    private readonly queue: GitCommand[][] = [];
-    private readonly recordRepo: Repo;
+  singleStepMode = false;
+  printCommands = true; // TODO: Pass this to commands.
+  readonly repo: Repo;
+  readonly commands: GitCommand[] = [];
+  private paused = true;
+  // Queue invariant: all nested lists are non-empty.
+  private readonly queue: GitCommand[][] = [];
+  private readonly recordRepo: Repo;
 
-    constructor(seed: string) {
-        this.repo = new Repo(seed);
-        this.recordRepo = new Repo(seed);
-    }
+  constructor(seed: string) {
+    this.repo = new Repo(seed);
+    this.recordRepo = new Repo(seed);
+  }
 
-    pause() {
-        this.paused = true;
-    }
+  pause() {
+    this.paused = true;
+  }
 
-    commit({ msg = "", reverse = false } = {}) {
-        this.enqueue(new CommitCommand(msg, reverse));
-        return this;
-    }
+  commit({ msg = "", reverse = false } = {}) {
+    this.enqueue(new CommitCommand(msg, reverse));
+    return this;
+  }
 
-    branch(name: string) {
-        this.enqueue(new BranchCommand(name));
-        return this;
-    }
+  branch(name: string) {
+    this.enqueue(new BranchCommand(name));
+    return this;
+  }
 
-    checkout(branch: string, { createBranch = false } = {}) {
-        this.enqueue(new CheckoutCommand(branch, createBranch));
-        return this;
-    }
+  checkout(branch: string, { createBranch = false } = {}) {
+    this.enqueue(new CheckoutCommand(branch, createBranch));
+    return this;
+  }
 
-    merge(branch: string) {
-        this.enqueue(new MergeCommand(branch));
-        return this;
-    }
+  merge(branch: string) {
+    this.enqueue(new MergeCommand(branch));
+    return this;
+  }
 
-    tag(name: string) {
-        this.enqueue(new TagCommand(name));
-        return this;
-    }
+  tag(name: string) {
+    this.enqueue(new TagCommand(name));
+    return this;
+  }
 
-    /** Runs the next set of commands; returns true if there are more commands. */
-    run(): boolean {
-        const commands = this.queue.shift();
-        if (!commands) {
-            return false; // run() called without any commands to play!
-        }
-        commands.forEach(command => command.execute(this.repo));
-        this.commands.push(...commands);
-        return this.queue.length > 0;
+  /** Runs the next set of commands; returns true if there are more commands. */
+  run(): boolean {
+    const commands = this.queue.shift();
+    if (!commands) {
+      return false; // run() called without any commands to play!
     }
+    commands.forEach(command => command.execute(this.repo));
+    this.commands.push(...commands);
+    return this.queue.length > 0;
+  }
 
-    temporalTopologicalWalk(callback: (commit: Commit) => void): void {
-        this.recordRepo.temporalTopologicalWalk(callback);
-    }
+  temporalTopologicalWalk(callback: (commit: Commit) => void): void {
+    this.recordRepo.temporalTopologicalWalk(callback);
+  }
 
-    private enqueue(command: GitCommand) {
-        command.execute(this.recordRepo);
-        if (this.paused) {
-            this.queue.push([]);
-            this.paused = false;
-        }
-        this.queue[this.queue.length - 1]!.push(command);
-        if (this.singleStepMode) {
-            this.pause();
-        }
+  private enqueue(command: GitCommand) {
+    command.execute(this.recordRepo);
+    if (this.paused) {
+      this.queue.push([]);
+      this.paused = false;
     }
+    this.queue[this.queue.length - 1]!.push(command);
+    if (this.singleStepMode) {
+      this.pause();
+    }
+  }
 }
 
 export abstract class GitCommand {
-    private _sha1: string | null = null;
+  private _sha1: string | null = null;
 
-    get sha1(): string {
-        if (this._sha1 === null) {
-            throw Error("Cannot call commit() before execute()")
-        }
-        return this._sha1 || "";
+  get sha1(): string {
+    if (this._sha1 === null) {
+      throw Error("Cannot call commit() before execute()");
     }
+    return this._sha1 || "";
+  }
 
-    execute(repo: Repo) {
-        this.doExecute(repo);
-        this._sha1 = repo.head.sha1;
-    }
+  execute(repo: Repo) {
+    this.doExecute(repo);
+    this._sha1 = repo.head.sha1;
+  }
 
-    protected abstract doExecute(_repo: Repo): void;
+  protected abstract doExecute(_repo: Repo): void;
 
-    command(): string {
-        throw Error("Not implemented");
-    }
+  command(): string {
+    throw Error("Not implemented");
+  }
 
-    visit(_visitor: GitCommandVisitor): void {}
+  visit(_visitor: GitCommandVisitor): void {}
 }
 
 export class CommitCommand extends GitCommand {
+  constructor(
+    public readonly msg: string,
+    public readonly reverse = false,
+  ) {
+    super();
+  }
 
-    constructor(
-        public readonly msg: string,
-        public readonly reverse = false)
-    {
-        super();
+  override command(): string {
+    if (this.msg) {
+      return "git commit -m '" + this.msg + "'";
     }
+    return "git commit";
+  }
 
-    override command(): string {
-        if (this.msg) {
-            return "git commit -m '" + this.msg + "'";
-        }
-        return "git commit";
-    }
+  protected doExecute(repo: Repo) {
+    repo.commit(this.msg);
+  }
 
-    protected doExecute(repo: Repo) {
-        repo.commit(this.msg);
-    }
-
-    override visit(visitor: GitCommandVisitor) {
-        visitor.visit(this);
-        visitor.visitCommit(this);
-    }
+  override visit(visitor: GitCommandVisitor) {
+    visitor.visit(this);
+    visitor.visitCommit(this);
+  }
 }
 
 export class CheckoutCommand extends GitCommand {
-    private _detachedHead: boolean | undefined;
+  private _detachedHead: boolean | undefined;
 
-    constructor(
-        public readonly branch: string,
-        public readonly createBranch = false)
-    {
-        super();
-    }
+  constructor(
+    public readonly branch: string,
+    public readonly createBranch = false,
+  ) {
+    super();
+  }
 
-    detachedHead(): boolean {
-        if (this._detachedHead === undefined) {
-            throw Error("Cannot call detachedHead() before execute()")
-        }
-        return this._detachedHead;
+  detachedHead(): boolean {
+    if (this._detachedHead === undefined) {
+      throw Error("Cannot call detachedHead() before execute()");
     }
+    return this._detachedHead;
+  }
 
-    protected doExecute(repo: Repo) {
-        if (this.createBranch) {
-            repo.branch(this.branch);
-        }
-        repo.checkout(this.branch);
-        this._detachedHead = !repo.currentBranch;
+  protected doExecute(repo: Repo) {
+    if (this.createBranch) {
+      repo.branch(this.branch);
     }
+    repo.checkout(this.branch);
+    this._detachedHead = !repo.currentBranch;
+  }
 
-    override command(): string {
-        if (this.createBranch) {
-            return "git checkout -b " + this.branch;
-        }
-        return "git checkout " + this.branch;
+  override command(): string {
+    if (this.createBranch) {
+      return "git checkout -b " + this.branch;
     }
+    return "git checkout " + this.branch;
+  }
 
-    override visit(visitor: GitCommandVisitor) {
-        visitor.visit(this);
-        visitor.visitCheckout(this);
-    }
+  override visit(visitor: GitCommandVisitor) {
+    visitor.visit(this);
+    visitor.visitCheckout(this);
+  }
 }
 
 export class BranchCommand extends GitCommand {
+  constructor(public readonly branch: string) {
+    super();
+  }
 
-    constructor(
-        public readonly branch: string)
-    {
-        super();
-    }
+  override command(): string {
+    return "git branch " + this.branch;
+  }
 
-    override command(): string {
-        return "git branch " + this.branch;
-    }
+  protected doExecute(repo: Repo) {
+    repo.branch(this.branch);
+  }
 
-    protected doExecute(repo: Repo) {
-        repo.branch(this.branch);
-    }
-
-    override visit(visitor: GitCommandVisitor) {
-        visitor.visit(this);
-        visitor.visitBranch(this);
-    }
+  override visit(visitor: GitCommandVisitor) {
+    visitor.visit(this);
+    visitor.visitBranch(this);
+  }
 }
 
 export class MergeCommand extends GitCommand {
+  constructor(public readonly branch: string) {
+    super();
+  }
 
-    constructor(
-        public readonly branch: string)
-    {
-        super();
-    }
+  override command(): string {
+    return "git merge " + this.branch;
+  }
 
-    override command(): string {
-        return "git merge " + this.branch;
-    }
+  protected doExecute(repo: Repo) {
+    repo.merge(this.branch);
+  }
 
-    protected doExecute(repo: Repo) {
-        repo.merge(this.branch);
-    }
-
-    override visit(visitor: GitCommandVisitor) {
-        visitor.visit(this);
-        visitor.visitMerge(this);
-    }
+  override visit(visitor: GitCommandVisitor) {
+    visitor.visit(this);
+    visitor.visitMerge(this);
+  }
 }
 
-export class TagCommand  extends GitCommand {
+export class TagCommand extends GitCommand {
+  constructor(public readonly tagName: string) {
+    super();
+  }
 
-    constructor(
-        public readonly tagName: string)
-    {
-        super();
-    }
+  override command(): string {
+    return "git tag " + this.tagName;
+  }
 
-    override command(): string {
-        return "git tag " + this.tagName;
-    }
+  protected doExecute(repo: Repo) {
+    repo.tag(this.tagName);
+  }
 
-    protected doExecute(repo: Repo) {
-        repo.tag(this.tagName);
-    }
-
-    override visit(visitor: GitCommandVisitor) {
-        visitor.visit(this);
-        visitor.visitTag(this);
-    }
+  override visit(visitor: GitCommandVisitor) {
+    visitor.visit(this);
+    visitor.visitTag(this);
+  }
 }
 
 export class GitCommandVisitor {
+  visit(_command: GitCommand): void {}
 
-    visit(_command: GitCommand): void {}
+  visitCommit(_command: CommitCommand): void {}
 
-    visitCommit(_command: CommitCommand): void {}
+  visitCheckout(_command: CheckoutCommand): void {}
 
-    visitCheckout(_command: CheckoutCommand): void {}
+  visitBranch(_command: BranchCommand): void {}
 
-    visitBranch(_command: BranchCommand): void {}
+  visitMerge(_command: MergeCommand): void {}
 
-    visitMerge(_command: MergeCommand): void {}
-
-    visitTag(_command: TagCommand): void {}
+  visitTag(_command: TagCommand): void {}
 }
 
 export interface Commit {
-    readonly msg: string;
-    readonly sha1: string;
-    readonly commitTime: number;
+  readonly msg: string;
+  readonly sha1: string;
+  readonly commitTime: number;
 
-    get parents(): ReadonlyArray<Commit>;
+  get parents(): ReadonlyArray<Commit>;
 
-    get tags(): ReadonlyArray<string>;
+  get tags(): ReadonlyArray<string>;
 
-    branchChildren(): Commit[];
+  branchChildren(): Commit[];
 
-    mergeChildren(): Commit[];
+  mergeChildren(): Commit[];
 }
 
 class InternalCommit implements Commit {
-    private readonly _parents: InternalCommit[] = [];
-    private readonly children: WeakRef<InternalCommit>[] = [];
-    private readonly _tags: string[] = [];
+  private readonly _parents: InternalCommit[] = [];
+  private readonly children: WeakRef<InternalCommit>[] = [];
+  private readonly _tags: string[] = [];
 
-    constructor(
-        public readonly msg: string,
-        public readonly sha1: string,
-        public readonly commitTime: number) {}
+  constructor(
+    public readonly msg: string,
+    public readonly sha1: string,
+    public readonly commitTime: number,
+  ) {}
 
-    private isMergeChildOf(parent: InternalCommit): boolean {
-        return !!this._parents.length && this._parents[0] !== parent;
-    }
+  private isMergeChildOf(parent: InternalCommit): boolean {
+    return !!this._parents.length && this._parents[0] !== parent;
+  }
 
-    branchChildren(): Commit[] {
-        return this.allChildren().filter(commit => !commit.isMergeChildOf(this));
-    }
+  branchChildren(): Commit[] {
+    return this.allChildren().filter(commit => !commit.isMergeChildOf(this));
+  }
 
-    mergeChildren(): Commit[] {
-        return this.allChildren().filter(commit => commit.isMergeChildOf(this));
-    }
+  mergeChildren(): Commit[] {
+    return this.allChildren().filter(commit => commit.isMergeChildOf(this));
+  }
 
-    get parents(): Readonly<Array<Commit>> {
-        return this._parents;
-    }
+  get parents(): Readonly<Array<Commit>> {
+    return this._parents;
+  }
 
-    addParent(commit: InternalCommit) {
-        this._parents.push(commit);
-        commit.children.push(new WeakRef(this));
-    }
+  addParent(commit: InternalCommit) {
+    this._parents.push(commit);
+    commit.children.push(new WeakRef(this));
+  }
 
-    get tags(): Readonly<Array<string>> {
-        return this._tags;
-    }
+  get tags(): Readonly<Array<string>> {
+    return this._tags;
+  }
 
-    addTag(label: string) {
-        this._tags.push(label);
-    }
+  addTag(label: string) {
+    this._tags.push(label);
+  }
 
-    private forEachChild(callback: (commit: InternalCommit) => void) {
-        this.children.forEach(ref => {
-            const maybeObj = ref.deref();
-            if (maybeObj) {
-                callback(maybeObj);
-            }
-        });
-    }
+  private forEachChild(callback: (commit: InternalCommit) => void) {
+    this.children.forEach(ref => {
+      const maybeObj = ref.deref();
+      if (maybeObj) {
+        callback(maybeObj);
+      }
+    });
+  }
 
-    allChildren(): InternalCommit[] {
-        const children: InternalCommit[] = [];
-        this.forEachChild(child => children.push(child));
-        return children;
-    }
+  allChildren(): InternalCommit[] {
+    const children: InternalCommit[] = [];
+    this.forEachChild(child => children.push(child));
+    return children;
+  }
 }
 
 export class Repo {
-    private _head: InternalCommit;
-    private readonly _commits: InternalCommit[];
-    private readonly commitMap = new Map<string, InternalCommit>();
-    private readonly rand: random.Random;
-    private readonly branches = new Map<string, InternalCommit>();
-    private readonly tags = new Map<string, InternalCommit>();
-    private curBranch: string; // An empty string for "detached head"
+  private _head: InternalCommit;
+  private readonly _commits: InternalCommit[];
+  private readonly commitMap = new Map<string, InternalCommit>();
+  private readonly rand: random.Random;
+  private readonly branches = new Map<string, InternalCommit>();
+  private readonly tags = new Map<string, InternalCommit>();
+  private curBranch: string; // An empty string for "detached head"
 
-    constructor(seed: string) {
-        this._commits = []
-        this.rand = new random.SplitMix32(random.hash32(seed));
-        this.curBranch = "main";
-        this._head = this._commit("First commit");
+  constructor(seed: string) {
+    this._commits = [];
+    this.rand = new random.SplitMix32(random.hash32(seed));
+    this.curBranch = "main";
+    this._head = this._commit("First commit");
+  }
+
+  get head(): Commit {
+    return this._head;
+  }
+
+  get currentBranch(): string | undefined {
+    return this.curBranch || undefined;
+  }
+
+  get commits(): Commit[] {
+    return this._commits;
+  }
+
+  temporalTopologicalWalk(callback: (commit: Commit) => void): void {
+    const visited = new Set<string>();
+
+    function ordering(a: InternalCommit, b: InternalCommit): number {
+      return a.commitTime - b.commitTime;
     }
 
-    get head(): Commit {
-        return this._head;
+    function dfs(commit: InternalCommit): void {
+      if (!visited.has(commit.sha1)) {
+        visited.add(commit.sha1);
+
+        const children = commit.allChildren();
+        children.sort(ordering);
+        children.forEach(dfs);
+
+        callback(commit);
+      }
     }
 
-    get currentBranch(): string | undefined {
-        return this.curBranch || undefined;
+    const sorted = [...this._commits];
+    sorted.sort(ordering);
+    sorted.forEach(dfs);
+  }
+
+  commit(msg: string) {
+    const prevHead = this._head;
+    const c = this._commit(msg);
+    c.addParent(prevHead);
+    return c;
+  }
+
+  tag(name: string) {
+    if (!name) {
+      throw Error("Tag names cannot be emtpy");
     }
-
-    get commits(): Commit[] {
-        return this._commits;
+    if (this.tags.has(name)) {
+      throw Error("Already a tag with name '" + name + "'");
     }
+    this.tags.set(name, this._head);
+    this._head.addTag(name);
+  }
 
-    temporalTopologicalWalk(callback: (commit: Commit) => void): void {
-        const visited = new Set<string>();
-
-        function ordering(a: InternalCommit, b: InternalCommit): number {
-            return a.commitTime - b.commitTime;
-        }
-
-        function dfs(commit: InternalCommit): void {
-            if (!(visited.has(commit.sha1))) {
-                visited.add(commit.sha1);
-
-                const children = commit.allChildren();
-                children.sort(ordering);
-                children.forEach(dfs);
-
-                callback(commit);
-            }
-        }
-
-        const sorted  = [...this._commits];
-        sorted.sort(ordering);
-        sorted.forEach(dfs);
+  private _commit(msg: string): InternalCommit {
+    if (!this.curBranch) {
+      throw Error('Cannot commit in "detached head" mode');
     }
+    const t = this._commits.length + 1;
+    const c = new InternalCommit(msg, this.rand.nextHex(), t);
+    this._commits.push(c);
+    this.commitMap.set(c.sha1, c);
+    this.branches.set(this.curBranch, c);
+    this._head = c;
+    return c;
+  }
 
-    commit(msg: string) {
-        const prevHead = this._head;
-        const c = this._commit(msg);
-        c.addParent(prevHead);
-        return c;
+  branch(name: string) {
+    if (!name) {
+      throw Error("Branch names cannot be emtpy");
     }
+    if (this.branches.has(name)) {
+      throw Error("Already a branch with name '" + name + "'");
+    }
+    this.branches.set(name, this._head);
+  }
 
-    tag(name: string) {
-        if (!name) {
-            throw Error("Tag names cannot be emtpy");
-        }
-        if (this.tags.has(name)) {
-            throw Error("Already a tag with name '" + name + "'");
-        }
-        this.tags.set(name, this._head);
-        this._head.addTag(name);
+  merge(ref: string) {
+    if (!ref) {
+      throw Error('Merge "" - not something we can merge');
     }
+    let commit = this.branches.get(ref);
+    if (!commit) {
+      commit = this.commitMap.get(ref);
+      if (!commit) {
+        throw Error(`Merge ${ref} - not something we can merge`);
+      }
+    }
+    const c = this.commit("Merge " + ref);
+    c.addParent(commit);
+    return c;
+  }
 
-    private _commit(msg: string): InternalCommit {
-        if (!this.curBranch) {
-            throw Error('Cannot commit in "detached head" mode');
-        }
-        const t = this._commits.length + 1;
-        const c = new InternalCommit(msg, this.rand.nextHex(), t);
-        this._commits.push(c);
-        this.commitMap.set(c.sha1, c);
-        this.branches.set(this.curBranch, c);
-        this._head = c;
-        return c;
+  checkout(ref: string) {
+    if (!ref) {
+      throw Error("Empty string is not a valid pathspec");
     }
-
-    branch(name: string) {
-        if (!name) {
-            throw Error("Branch names cannot be emtpy");
-        }
-        if (this.branches.has(name)) {
-            throw Error("Already a branch with name '" + name + "'");
-        }
-        this.branches.set(name, this._head);
+    let newHead = this.branches.get(ref);
+    if (!newHead) {
+      newHead = this.commitMap.get(ref);
+      if (!newHead) {
+        throw Error(`pathspec '${ref}' did not match any file(s) known to git`);
+      }
+      ref = "";
     }
-
-    merge(ref: string) {
-        if (!ref) {
-            throw Error('Merge "" - not something we can merge');
-        }
-        let commit = this.branches.get(ref);
-        if (!commit) {
-            commit = this.commitMap.get(ref);
-            if (!commit) {
-                throw Error(`Merge ${ref} - not something we can merge`);
-            }
-        }
-        const c = this.commit("Merge " + ref);
-        c.addParent(commit);
-        return c;
-    }
-
-    checkout(ref: string) {
-        if (!ref) {
-            throw Error("Empty string is not a valid pathspec");
-        }
-        let newHead = this.branches.get(ref);
-        if (!newHead) {
-            newHead = this.commitMap.get(ref);
-            if (!newHead) {
-                throw Error(`pathspec '${ref}' did not match any file(s) known to git`)
-            }
-            ref = "";
-        }
-        this._head = newHead;
-        this.curBranch = ref;
-    }
+    this._head = newHead;
+    this.curBranch = ref;
+  }
 }

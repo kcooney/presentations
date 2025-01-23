@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": ["ES2020",  "ES2021.WeakRef", "DOM"],
+    "lib": ["ES2020", "ES2021.WeakRef", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "strict": true,
@@ -12,7 +12,5 @@
     "noUncheckedIndexedAccess": true,
     "outDir": "dist"
   },
-  "include": [
-    "./src/**/*.ts"
-  ]
+  "include": ["./src/**/*.ts"]
 }

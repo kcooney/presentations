@@ -2,11 +2,13 @@
 
 import globals from "globals";
 import eslint from '@eslint/js';
+import prettierConfig from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.strict,
+  prettierConfig,
   {
     "files": ["**/*.ts"],
     "languageOptions": { globals: globals.browser },

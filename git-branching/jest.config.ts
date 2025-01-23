@@ -3,7 +3,7 @@
  * https://jestjs.io/docs/configuration
  */
 
-import type {Config} from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
   // All imported modules in your tests should be mocked automatically
@@ -73,15 +73,10 @@ const config: Config = {
   // maxWorkers: "50%",
 
   // An array of directory names to be searched recursively up from the requiring module's location
-  moduleDirectories: [
-     "node_modules", "src"
-  ],
+  moduleDirectories: ["node_modules", "src"],
 
   // An array of file extensions your modules use
-  moduleFileExtensions: [
-    "ts",
-    "js"
-  ],
+  moduleFileExtensions: ["ts", "js"],
   // moduleFileExtensions: [
   //   "js",
   //   "mjs",
@@ -96,7 +91,7 @@ const config: Config = {
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
     "@/(.*)": "<rootDir>/src/$1",
-    "database": "<rootDir>/src/lib/database"
+    database: "<rootDir>/src/lib/database",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -109,7 +104,7 @@ const config: Config = {
   // notifyMode: "failure-change",
 
   // A preset that is used as a base for Jest's configuration
-  "preset": "ts-jest/presets/js-with-ts",
+  preset: "ts-jest/presets/js-with-ts",
 
   // Run tests from one or more projects
   // projects: undefined,
