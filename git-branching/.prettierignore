@@ -1,5 +1,2 @@
 # Ignore all HTML files:
 **/*.html
-
-# Ignore (for now) eslint config.
-eslint.config.mjs 
