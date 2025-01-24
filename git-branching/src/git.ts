@@ -45,12 +45,15 @@ export class Git {
   }
 
   /** Runs the next set of commands; returns true if there are more commands. */
-  run(): boolean {
+  run(visitor: GitCommandVisitor | null = null): boolean {
     const commands = this.queue.shift();
     if (!commands) {
       return false; // run() called without any commands to play!
     }
-    commands.forEach(command => command.execute(this.repo));
+    commands.forEach(command => {
+      command.execute(this.repo);
+      visitor?.visit(command);
+    });
     this.commands.push(...commands);
     return this.queue.length > 0;
   }
@@ -77,7 +80,7 @@ export abstract class GitCommand {
 
   get sha1(): string {
     if (this._sha1 === null) {
-      throw Error("Cannot call commit() before execute()");
+      throw Error("Cannot reference sha1 before execute()");
     }
     return this._sha1 || "";
   }
@@ -198,6 +201,8 @@ export class MergeCommand extends GitCommand {
 }
 
 export class TagCommand extends GitCommand {
+  private _commit: Commit | null = null;
+
   constructor(public readonly tagName: string) {
     super();
   }
@@ -207,7 +212,14 @@ export class TagCommand extends GitCommand {
   }
 
   protected doExecute(repo: Repo) {
-    repo.tag(this.tagName);
+    this._commit = repo.tag(this.tagName);
+  }
+
+  get taggedCommit(): Commit {
+    if (this._commit === null) {
+      throw Error("Cannot reference taggedCommit before execute()");
+    }
+    return this._commit;
   }
 
   override visit(visitor: GitCommandVisitor) {
@@ -328,6 +340,10 @@ export class Repo {
     return this._commits;
   }
 
+  getCommit(sha1: string): Commit | undefined {
+    return this.commitMap.get(sha1);
+  }
+
   temporalTopologicalWalk(callback: (commit: Commit) => void): void {
     const visited = new Set<string>();
 
@@ -359,7 +375,7 @@ export class Repo {
     return c;
   }
 
-  tag(name: string) {
+  tag(name: string): Commit {
     if (!name) {
       throw Error("Tag names cannot be emtpy");
     }
@@ -368,6 +384,7 @@ export class Repo {
     }
     this.tags.set(name, this._head);
     this._head.addTag(name);
+    return this._head;
   }
 
   private _commit(msg: string): InternalCommit {

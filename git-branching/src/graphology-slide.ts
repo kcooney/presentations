@@ -8,7 +8,7 @@ import {
 import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
 import { Slide, addSlide, enableMotion, failWith } from "./motion.js";
-import { Commit, Git } from "./git.js";
+import { Commit, Git, GitCommandVisitor, TagCommand } from "./git.js";
 
 const SPACE_BETWEEN_COMMITS = 3;
 const SPACE_BETWEEN_BRANCHES = 4;
@@ -46,7 +46,7 @@ export class GraphologySlide implements Slide {
 
   static add(
     sectionId: string,
-    config: Config = { showHead: false},
+    config: Config = { showHead: false },
     recorder: (git: Git) => void,
   ): void {
     addSlide(sectionId, section => {
@@ -128,8 +128,16 @@ export class GraphologySlide implements Slide {
       this.git = new Git(this.seed);
       this.resetSlide();
     }
+
     const prevHead = this.git.repo.head;
-    const hasMoreCommands = this.git.run();
+    const updateLabels = this.updateLabels.bind(this);
+    const hasMoreCommands = this.git.run(
+      new (class extends GitCommandVisitor {
+        override visitTag(command: TagCommand): void {
+          updateLabels(command.taggedCommit);
+        }
+      })(),
+    );
 
     const shiftUp = Math.max(0, this.maxY - this.maxI * SPACE_BETWEEN_COMMITS);
     for (const commit of this.git.repo.commits) {
@@ -139,8 +147,11 @@ export class GraphologySlide implements Slide {
           console.log("Could not find wrapper for '%s'", commit.sha1);
         } else {
           const color = COLORS[wrapper.j % COLORS.length];
+          const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
           this.graph.addNode(commit.sha1, {
             type: "commit",
+            label: label || null,
+            forceLabel: !!label,
             hover: commit.msg ? commit.sha1 + " " + commit.msg : commit.sha1,
             y: wrapper.i * SPACE_BETWEEN_COMMITS + shiftUp,
             x: wrapper.j * SPACE_BETWEEN_BRANCHES,
@@ -158,17 +169,31 @@ export class GraphologySlide implements Slide {
       }
     }
     if (prevHead !== this.git.repo.head) {
-      this.graph.removeNodeAttribute(prevHead.sha1, "label");
-      this.graph.setNodeAttribute(prevHead.sha1, "forceLabel", false);
+      this.updateLabels(prevHead);
     }
     if (this.showHead) {
-      this.graph.setNodeAttribute(this.git.repo.head.sha1, "label", "⇠ HEAD");
-      this.graph.setNodeAttribute(this.git.repo.head.sha1, "forceLabel", true);
+      this.updateLabels(this.git.repo.head, { addHead: true });
     }
 
     const commands = this.git.commands.map(command => command.command());
     this.code.innerHTML = "$ " + commands.join("<br />$ ");
     return hasMoreCommands;
+  }
+
+  private updateLabels(commit: Commit, { addHead = false } = {}) {
+    const sha1 = commit.sha1;
+    let labels = commit.tags;
+    if (addHead) {
+      labels = labels.concat(["HEAD"]);
+    }
+    if (labels.length) {
+      const label = labels.map(tag => `⇠ ${tag}`).join(" ");
+      this.graph.setNodeAttribute(sha1, "label", label);
+      this.graph.setNodeAttribute(sha1, "forceLabel", true);
+    } else {
+      this.graph.removeNodeAttribute(sha1, "label");
+      this.graph.setNodeAttribute(sha1, "forceLabel", false);
+    }
   }
 
   private calculateCommitPositions(): void {
@@ -236,11 +261,7 @@ function drawCommitNodeHover(
 ): void {
   if ("hover" in data && typeof data.hover === "string") {
     const label = data.label;
-    if (label) {
-      data.label = data.hover + " " + data.label;
-    } else {
-      data.label = data.hover;
-    }
+    data.label = data.hover;
     try {
       drawDiscNodeHover(context, data, settings);
     } finally {
