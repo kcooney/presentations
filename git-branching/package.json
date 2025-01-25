@@ -4,7 +4,7 @@
     "compile": "tsc",
     "lint": "eslint src",
     "prebundle": "tsc",
-    "bundle": "esbuild ./dist/slides.js --bundle --sourcemap --outfile=public/bundle.js",
+    "bundle": "esbuild ./dist/main.js --bundle --sourcemap --outfile=public/bundle.js",
     "test": "jest"
   },
   "dependencies": {
