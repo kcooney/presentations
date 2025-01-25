@@ -1,5 +1,6 @@
 import mermaid from "mermaid";
-import { Slide, addSlide, enableMotion } from "./motion.js";
+import { enableMotion } from "./motion.js";
+import { Slide, addSlide } from "./slide.js";
 import * as git from "./git.js";
 import { failWith } from "./util.js";
 

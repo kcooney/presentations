@@ -7,7 +7,8 @@ import {
 } from "sigma/rendering";
 import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
-import { Slide, addSlide, enableMotion } from "./motion.js";
+import { enableMotion } from "./motion.js";
+import { Slide, addSlide } from "./slide.js";
 import { Commit, Git, GitCommandVisitor, TagCommand } from "./git.js";
 import { failWith } from "./util.js";
 
