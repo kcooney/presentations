@@ -100,6 +100,12 @@ export class MermaidSlide implements Slide {
   private readonly seed: string;
   private git: git.Git;
 
+  /**
+   * Adds a Mermaid-based slide to the deck.
+   *
+   * @param sectionId DOM ID for the section element of the slide.
+   * @param recorder Callback to call to get the set of commands to show on the slide.
+   */
   static add(sectionId: string, recorder: (git: git.Git) => void): void {
     addSlide(sectionId, section => {
       return new (class extends MermaidSlide {

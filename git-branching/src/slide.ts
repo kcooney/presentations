@@ -10,31 +10,19 @@ type Initializer = () => Slide | null;
 
 const initializers = new Map<string, Initializer>();
 
-interface ReadyEvent extends Event {
-  currentSlide: HTMLElement;
-  indexh: number;
-  indexy: number;
-}
-
-interface SlideChangedEvent extends Event {
-  previousSlide: HTMLElement;
-  currentSlide: HTMLElement;
-  indexh: number;
-  indexy: number;
-}
-
-declare global {
-  interface ElementEventMap {
-    ready: ReadyEvent;
-    slidechanged: SlideChangedEvent;
-  }
-}
-
 export interface Slide {
   onShowSlide(): void;
   onHideSlide(): void;
 }
 
+/**
+ * Adds a slide to the current deck.
+ *
+ * Cannot be called after `Reveal.initialize()`.
+ *
+ * @param sectionId DOM ID for the section element of the slide.
+ * @param callback Called once to create the slide.
+ */
 export function addSlide(
   sectionId: string,
   callback: (section: HTMLElement) => Slide,
@@ -66,6 +54,27 @@ Reveal.on("slidechanged", (event: SlideChangedEvent) => {
   slides.get(event.previousSlide.id)?.onHideSlide();
   slides.get(event.currentSlide.id)?.onShowSlide();
 });
+
+interface ReadyEvent extends Event {
+  currentSlide: HTMLElement;
+  indexh: number;
+  indexy: number;
+}
+
+interface SlideChangedEvent extends Event {
+  previousSlide: HTMLElement;
+  currentSlide: HTMLElement;
+  indexh: number;
+  indexy: number;
+}
+
+// Make typescript aware of Reveal's custom events.
+declare global {
+  interface ElementEventMap {
+    ready: ReadyEvent;
+    slidechanged: SlideChangedEvent;
+  }
+}
 
 Reveal.on("ready", (event: ReadyEvent) => {
   receivedReadyEvent = true;

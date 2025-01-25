@@ -1,10 +1,13 @@
 import * as random from "./random.js";
 
+/** Records a series of Git operations to be shown on the slide. */
 export class Git {
+  /* If true, `pause()` is implicitly called after all git operations. */
   singleStepMode = false;
+
   printCommands = true; // TODO: Pass this to commands.
   readonly repo: Repo;
-  readonly commands: GitCommand[] = [];
+  readonly _commands: GitCommand[] = [];
   private paused = true;
   // Queue invariant: all nested lists are non-empty.
   private readonly queue: GitCommand[][] = [];
@@ -13,6 +16,10 @@ export class Git {
   constructor(seed: string) {
     this.repo = new Repo(seed);
     this.recordRepo = new Repo(seed);
+  }
+
+  get commands(): ReadonlyArray<GitCommand> {
+    return this._commands;
   }
 
   pause() {
@@ -54,7 +61,7 @@ export class Git {
       command.execute(this.repo);
       visitor?.visit(command);
     });
-    this.commands.push(...commands);
+    this._commands.push(...commands);
     return this.queue.length > 0;
   }
 
@@ -78,6 +85,7 @@ export class Git {
 export abstract class GitCommand {
   private _sha1: string | null = null;
 
+  /** The HEAD commit after the command ran. */
   get sha1(): string {
     if (this._sha1 === null) {
       throw Error("Cannot reference sha1 before execute()");
@@ -92,11 +100,12 @@ export abstract class GitCommand {
 
   protected abstract doExecute(_repo: Repo): void;
 
+  /** Command representing this GitCommand (ex: `git branch`). */
   command(): string {
     throw Error("Not implemented");
   }
 
-  visit(_visitor: GitCommandVisitor): void {}
+  abstract visit(_visitor: GitCommandVisitor): void;
 }
 
 export class CommitCommand extends GitCommand {
@@ -312,6 +321,7 @@ class InternalCommit implements Commit {
   }
 }
 
+/** Simulates a git repository. */
 export class Repo {
   private _head: InternalCommit;
   private readonly _commits: InternalCommit[];
@@ -336,7 +346,7 @@ export class Repo {
     return this.curBranch || undefined;
   }
 
-  get commits(): Commit[] {
+  get commits(): ReadonlyArray<Commit> {
     return this._commits;
   }
 
@@ -375,6 +385,7 @@ export class Repo {
     return c;
   }
 
+  /** Adds a tag to the commit that HEAD points to. */
   tag(name: string): Commit {
     if (!name) {
       throw Error("Tag names cannot be emtpy");
@@ -400,6 +411,7 @@ export class Repo {
     return c;
   }
 
+  /** Creates a branch. */
   branch(name: string) {
     if (!name) {
       throw Error("Branch names cannot be emtpy");
@@ -410,6 +422,7 @@ export class Repo {
     this.branches.set(name, this._head);
   }
 
+  /** Merges the given ref to the current branch. */
   merge(ref: string) {
     if (!ref) {
       throw Error('Merge "" - not something we can merge');

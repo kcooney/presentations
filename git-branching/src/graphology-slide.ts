@@ -41,6 +41,12 @@ export class GraphologySlide implements Slide {
   private maxI = 0;
   private maxJ = 0;
 
+  /**
+   * Adds a Graphology-based slide to the deck.
+   *
+   * @param sectionId DOM ID for the section element of the slide.
+   * @param recorder Callback to call to get the set of commands to show on the slide.
+   */
   static add(
     sectionId: string,
     config: Config = { showHead: false },
@@ -202,7 +208,7 @@ export class GraphologySlide implements Slide {
 
     class CommitWrapper implements Position {
       branchChildren: CommitWrapper[] = [];
-    
+
       constructor(
         public readonly commit: Commit,
         public i: number,
