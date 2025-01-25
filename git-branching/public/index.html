@@ -48,30 +48,29 @@
           data-markdown
           data-background-gradient="radial-gradient(#3177eeff, #113d8aff)">
           <textarea data-template>
-	  # Branching in Git
+# Branching in Git
 
-	  Kevin W. Cooney - https://github.com/kcooney
+Kevin W. Cooney - https://github.com/kcooney
 
-	  Gear Heads - FRC 2813
+Gear Heads - FRC 2813
 
-	  Adapted from the [Branches in a Nutshell](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)
-	  chapter of [Pro Git](https://git-scm.com/book/en/v2/)
+Adapted from the [Branches in a Nutshell](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)
+chapter of [Pro Git](https://git-scm.com/book/en/v2/)
 
-	  ---
-	  - Use the forward arrow key to see transitions
-	  - Use the arrows to change slides
-	        </textarea>
+---
+- Use the forward arrow key to see transitions
+- Use the arrows to change slides
+          </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## What is a Commit?
-	    - A commit contains a pointer to snapshot of code
-	    - It also contains metadata, including the author's name
-	      and the commit message
-	    - All commits but the first contain a pointer to the
-	      commit (or commits) that came before it (its parent or
-	      parents)
-	        </textarea>
+## What is a Commit?
+- A commit contains a pointer to snapshot of code
+- It also contains metadata, including the author's name and the commit
+  message
+- All commits but the first contain a pointer to the commit (or commits) that
+  came before it (its parent or parents)
+          </textarea>
         </section>
         <section id="mermaid-demo-slide" data-visibility="hidden">
           <h2>Mermaid Demo</h2>
@@ -108,13 +107,13 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## What is a Branch?
-	    - A branch is a movable pointer to a commit
-	    - When you checkout a branch, git updates the files in your working
-	      working directory to match the commit that the branch references
-	    - When you make a commit, the currently checked-out branch will be
-	      updated to point to the new commit
-	        </textarea>
+## What is a Branch?
+- A branch is a movable pointer to a commit
+- When you checkout a branch, git updates the files in your working working
+  directory to match the commit that the branch references
+- When you make a commit, the currently checked-out branch will be updated to
+  point to the new commit
+          </textarea>
         </section>
         <section id="branches-slide">
           <h2>Branches</h2>
@@ -129,11 +128,11 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## What is a tag?
-	    - A tag is a pointer to a commit
-	    - It is similar to a branch, but it doesn't move
-	    - Branches and tags are *references*
-	        </textarea>
+## What is a tag?
+- A tag is a pointer to a commit
+- It is similar to a branch, but it doesn't move
+- Branches and tags are *references*
+          </textarea>
         </section>
         <section id="tagging-slide">
           <h2>Tagging</h2>
@@ -148,16 +147,15 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## What is HEAD?
-	    - HEAD is a special movable pointer to a commit; it always points to
-	      the current branch (or the current commit)
-	    - When you checkout a branch, **git updates HEAD to point to the
-	      branch**, then updates the files in your working directory to
-	      match the commit that HEAD points to
-	    - When you make a commit, the currently checked-out branch will be
-	      updated to point to the new commit; **HEAD still points to the
-	      branch**
-	        </textarea>
+## What is HEAD?
+- HEAD is a special movable pointer to a commit; it always points to the
+  current branch (or the current commit)
+- When you checkout a branch, **git updates HEAD to point to the branch**,
+  then updates the files in your working directory to match the commit that
+  HEAD points to
+- When you make a commit, the currently checked-out branch will be updated to
+  point to the new commit; **HEAD still points to the branch**
+          </textarea>
         </section>
         <section id="head-slide">
           <h2>Moving HEAD</h2>
@@ -172,20 +170,20 @@
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## Why Branch?
-	    - To make changes without breaking others
-	    - To create a stable baseline
+## Why Branch?
+- To make changes without breaking others
+- To create a stable baseline
 
-	    In other words, branches provide isolation
-	        </textarea>
+In other words, branches provide isolation.
+          </textarea>
         </section>
         <section data-markdown>
           <textarea data-template>
-	    ## References and Resources
-	    - Pro Git (https://git-scm.com/book/en/v2/) - Online Git book
-	    - reveal.js (https://revealjs.com) - HTML presentation framework
-	    - Mermaid (https://mermaid.js.org) - JS diagramming and charting
-	        </textarea>
+## References and Resources
+- Pro Git (https://git-scm.com/book/en/v2/) - Online Git book
+- reveal.js (https://revealjs.com) - HTML presentation framework
+- Mermaid (https://mermaid.js.org) - JS diagramming and charting
+          </textarea>
         </section>
       </div>
     </div>
