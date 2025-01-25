@@ -4,6 +4,8 @@
  */
 const config = {
   arrowParens: "avoid",
+  bracketSameLine: true,
+  htmlWhitespaceSensitivity: "css",
 };
 
 export default config;
