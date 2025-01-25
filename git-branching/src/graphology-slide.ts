@@ -7,8 +7,9 @@ import {
 } from "sigma/rendering";
 import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
-import { Slide, addSlide, enableMotion, failWith } from "./motion.js";
+import { Slide, addSlide, enableMotion } from "./motion.js";
 import { Commit, Git, GitCommandVisitor, TagCommand } from "./git.js";
+import { failWith } from "./util.js";
 
 const SPACE_BETWEEN_COMMITS = 3;
 const SPACE_BETWEEN_BRANCHES = 4;
