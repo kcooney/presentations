@@ -11,10 +11,10 @@ export class GitRecorder implements CommitGraph {
 
   printCommands = true;
   readonly repo: Repo;
-  readonly _commands: GitCommand[] = [];
+  readonly _operations: GitOperation[] = [];
   private paused = true;
   // Queue invariant: all nested lists are non-empty.
-  private readonly queue: GitCommand[][] = [];
+  private readonly queue: GitOperation[][] = [];
   private readonly recordRepo: Repo;
 
   constructor(seed: string) {
@@ -22,8 +22,8 @@ export class GitRecorder implements CommitGraph {
     this.recordRepo = new Repo(seed);
   }
 
-  get commands(): ReadonlyArray<GitCommand> {
-    return this._commands;
+  get operations(): ReadonlyArray<GitOperation> {
+    return this._operations;
   }
 
   pause() {
@@ -31,32 +31,34 @@ export class GitRecorder implements CommitGraph {
   }
 
   commit({ msg = "", reverse = false } = {}) {
-    this.enqueue(new CommitCommand(this.printCommands, msg, reverse));
+    this.enqueue(new CommitOperation(this.printCommands, msg, reverse));
     return this;
   }
 
   branch(name: string) {
-    this.enqueue(new BranchCommand(this.printCommands, name));
+    this.enqueue(new BranchOperation(this.printCommands, name));
     return this;
   }
 
   checkout(branch: string, { createBranch = false } = {}) {
-    this.enqueue(new CheckoutCommand(this.printCommands, branch, createBranch));
+    this.enqueue(
+      new CheckoutOperation(this.printCommands, branch, createBranch),
+    );
     return this;
   }
 
   merge(branch: string) {
-    this.enqueue(new MergeCommand(this.printCommands, branch));
+    this.enqueue(new MergeOperation(this.printCommands, branch));
     return this;
   }
 
   tag(name: string) {
-    this.enqueue(new TagCommand(this.printCommands, name));
+    this.enqueue(new TagOperation(this.printCommands, name));
     return this;
   }
 
   /** Runs the next set of commands; returns true if there are more commands. */
-  replay(visitor: GitCommandVisitor | null = null): boolean {
+  replay(visitor: GitOperationVisitor | null = null): boolean {
     const commands = this.queue.shift();
     if (!commands) {
       return false; // run() called without any commands to play!
@@ -67,7 +69,7 @@ export class GitRecorder implements CommitGraph {
         command.visit(visitor);
       }
     });
-    this._commands.push(...commands);
+    this._operations.push(...commands);
     return this.queue.length > 0;
   }
 
@@ -75,7 +77,7 @@ export class GitRecorder implements CommitGraph {
     this.recordRepo.temporalTopologicalWalk(callback);
   }
 
-  private enqueue(command: GitCommand) {
+  private enqueue(command: GitOperation) {
     command.execute(this.recordRepo);
     if (this.paused) {
       this.queue.push([]);
@@ -88,12 +90,10 @@ export class GitRecorder implements CommitGraph {
   }
 }
 
-export abstract class GitCommand {
+export abstract class GitOperation {
   private _sha1: string | null = null;
 
-  constructor(
-    readonly printCommand: boolean,
-  ) {}
+  constructor(readonly printCommand: boolean) {}
 
   /** The HEAD commit after the command ran. */
   get sha1(): string {
@@ -110,7 +110,7 @@ export abstract class GitCommand {
 
   protected abstract doExecute(_repo: Repo): void;
 
-  /** Command representing this GitCommand (ex: `git branch`). */
+  /** Command representing this GitOperation (ex: `git branch`). */
   get command(): string | null {
     if (this._sha1 === null) {
       throw Error("Cannot reference command before execute()");
@@ -123,10 +123,10 @@ export abstract class GitCommand {
 
   protected abstract doGetCommand(): string;
 
-  abstract visit(_visitor: GitCommandVisitor): void;
+  abstract visit(_visitor: GitOperationVisitor): void;
 }
 
-export class CommitCommand extends GitCommand {
+export class CommitOperation extends GitOperation {
   constructor(
     printCommand: boolean,
     public readonly msg: string,
@@ -146,13 +146,13 @@ export class CommitCommand extends GitCommand {
     repo.commit(this.msg);
   }
 
-  override visit(visitor: GitCommandVisitor) {
+  override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitCommit(this);
   }
 }
 
-export class CheckoutCommand extends GitCommand {
+export class CheckoutOperation extends GitOperation {
   private _detachedHead: boolean | undefined;
 
   constructor(
@@ -185,14 +185,17 @@ export class CheckoutCommand extends GitCommand {
     return "git checkout " + this.branch;
   }
 
-  override visit(visitor: GitCommandVisitor) {
+  override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitCheckout(this);
   }
 }
 
-export class BranchCommand extends GitCommand {
-  constructor(printCommand: boolean, public readonly branch: string) {
+export class BranchOperation extends GitOperation {
+  constructor(
+    printCommand: boolean,
+    public readonly branch: string,
+  ) {
     super(printCommand);
   }
 
@@ -204,14 +207,17 @@ export class BranchCommand extends GitCommand {
     repo.branch(this.branch);
   }
 
-  override visit(visitor: GitCommandVisitor) {
+  override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitBranch(this);
   }
 }
 
-export class MergeCommand extends GitCommand {
-  constructor(printCommand: boolean, public readonly branch: string) {
+export class MergeOperation extends GitOperation {
+  constructor(
+    printCommand: boolean,
+    public readonly branch: string,
+  ) {
     super(printCommand);
   }
 
@@ -223,16 +229,19 @@ export class MergeCommand extends GitCommand {
     repo.merge(this.branch);
   }
 
-  override visit(visitor: GitCommandVisitor) {
+  override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitMerge(this);
   }
 }
 
-export class TagCommand extends GitCommand {
+export class TagOperation extends GitOperation {
   private _commit: Commit | null = null;
 
-  constructor(printCommand: boolean, public readonly tagName: string) {
+  constructor(
+    printCommand: boolean,
+    public readonly tagName: string,
+  ) {
     super(printCommand);
   }
 
@@ -251,26 +260,26 @@ export class TagCommand extends GitCommand {
     return this._commit;
   }
 
-  override visit(visitor: GitCommandVisitor) {
+  override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitTag(this);
   }
 }
 
 /** Visitor interface for operations performed on a GitRecorder. */
-export class GitCommandVisitor {
-  /** Called for every command (before the GitCommand-subclass visit method is called). */
-  visit(_command: GitCommand): void {}
+export class GitOperationVisitor {
+  /** Called for every command (before the GitOperation-subclass visit method is called). */
+  visit(_op: GitOperation): void {}
 
-  visitCommit(_command: CommitCommand): void {}
+  visitCommit(_op: CommitOperation): void {}
 
-  visitCheckout(_command: CheckoutCommand): void {}
+  visitCheckout(_op: CheckoutOperation): void {}
 
-  visitBranch(_command: BranchCommand): void {}
+  visitBranch(_op: BranchOperation): void {}
 
-  visitMerge(_command: MergeCommand): void {}
+  visitMerge(_op: MergeOperation): void {}
 
-  visitTag(_command: TagCommand): void {}
+  visitTag(_op: TagOperation): void {}
 }
 
 export interface Commit {

@@ -4,7 +4,10 @@ import { GitRecorder } from "./git.js";
 import { GraphologySlide } from "./graphology-slide.js";
 import { MermaidSlide } from "./mermaid-slide.js";
 
-function addSlide(sectionId: string, recorder: (git: GitRecorder) => void): void {
+function addSlide(
+  sectionId: string,
+  recorder: (git: GitRecorder) => void,
+): void {
   MermaidSlide.add(sectionId, recorder);
 }
 

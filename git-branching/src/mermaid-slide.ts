@@ -30,7 +30,7 @@ class TaggableAction extends Action {
   }
 }
 
-class MermaidGitCommandVisitor extends git.GitCommandVisitor {
+class MermaidGitOperationVisitor extends git.GitOperationVisitor {
   readonly actions: Action[] = [];
   readonly commands: string[] = [];
   head: git.Commit;
@@ -41,51 +41,51 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
     this.head = repo.head;
   }
 
-  override visit(command: git.GitCommand) {
-    if (command.command) {
-      this.commands.push(command.command);
+  override visit(op: git.GitOperation) {
+    if (op.command) {
+      this.commands.push(op.command);
     }
   }
 
-  override visitCommit(command: git.CommitCommand) {
-    const sha1 = command.sha1;
-    const id = command.msg ? command.msg : sha1;
+  override visitCommit(op: git.CommitOperation) {
+    const sha1 = op.sha1;
+    const id = op.msg ? op.msg : sha1;
     let line = `commit id:"${id}"`;
     if (this.head.sha1 == sha1) {
       line += " type:HIGHLIGHT";
-    } else if (command.reverse) {
+    } else if (op.reverse) {
       line += " type:REVERSE";
     }
     const action = new TaggableAction(line);
-    this.taggableActions.set(command.sha1, action);
+    this.taggableActions.set(op.sha1, action);
     this.actions.push(action);
   }
 
-  override visitTag(command: git.TagCommand): void {
-    this.taggableActions.get(command.sha1)?.setTag(command.tagName);
+  override visitTag(op: git.TagOperation): void {
+    this.taggableActions.get(op.sha1)?.setTag(op.tagName);
   }
 
-  override visitCheckout(command: git.CheckoutCommand) {
-    if (!command.detachedHead()) {
-      if (command.createBranch) {
-        this.actions.push(new Action("branch " + command.branch));
+  override visitCheckout(op: git.CheckoutOperation) {
+    if (!op.detachedHead()) {
+      if (op.createBranch) {
+        this.actions.push(new Action("branch " + op.branch));
       }
-      this.actions.push(new Action("checkout " + command.branch));
+      this.actions.push(new Action("checkout " + op.branch));
     }
   }
 
-  override visitBranch(command: git.BranchCommand) {
-    this.actions.push(new Action("branch " + command.branch));
+  override visitBranch(op: git.BranchOperation) {
+    this.actions.push(new Action("branch " + op.branch));
   }
 
-  override visitMerge(command: git.MergeCommand) {
-    const sha1 = command.sha1;
-    let line = `merge ${command.branch} id: "${sha1}"`;
+  override visitMerge(op: git.MergeOperation) {
+    const sha1 = op.sha1;
+    let line = `merge ${op.branch} id: "${sha1}"`;
     if (this.head.sha1 == sha1) {
       line += " type: HIGHLIGHT";
     }
     const action = new TaggableAction(line);
-    this.taggableActions.set(command.sha1, action);
+    this.taggableActions.set(op.sha1, action);
     this.actions.push(action);
   }
 
@@ -108,7 +108,10 @@ export class MermaidSlide implements Slide {
    * @param sectionId DOM ID for the section element of the slide.
    * @param recorder Callback to call to get the set of commands to show on the slide.
    */
-  static add(sectionId: string, recorder: (git: git.GitRecorder) => void): void {
+  static add(
+    sectionId: string,
+    recorder: (git: git.GitRecorder) => void,
+  ): void {
     addSlide(sectionId, section => {
       return new (class extends MermaidSlide {
         protected override record(git: git.GitRecorder): void {
@@ -163,10 +166,10 @@ export class MermaidSlide implements Slide {
       this.git = new git.GitRecorder(this.seed);
       this.resetSlide();
     }
-    const hasMoreCommands = this.git.replay();
+    const hasMoreOperations = this.git.replay();
 
-    const visitor = new MermaidGitCommandVisitor(this.git.repo);
-    this.git.commands.forEach(command => command.visit(visitor));
+    const visitor = new MermaidGitOperationVisitor(this.git.repo);
+    this.git.operations.forEach(op => op.visit(visitor));
 
     const element = this.mermaidElement;
     this.code.innerHTML = "$ " + visitor.commands.join("<br />$ ");
@@ -177,6 +180,6 @@ export class MermaidSlide implements Slide {
       .then(renderResult => (element.innerHTML = renderResult.svg))
       .catch(error => console.log("render error: %s", error));
 
-    return hasMoreCommands;
+    return hasMoreOperations;
   }
 }

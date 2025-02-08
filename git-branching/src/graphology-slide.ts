@@ -9,7 +9,12 @@ import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import { Commit, GitRecorder, GitCommandVisitor, TagCommand } from "./git.js";
+import {
+  Commit,
+  GitRecorder,
+  GitOperationVisitor,
+  TagOperation,
+} from "./git.js";
 import { Layout } from "./layout.js";
 import { failWith } from "./util.js";
 
@@ -130,9 +135,9 @@ export class GraphologySlide implements Slide {
     const prevHead = this.git.repo.head;
     const updateLabels = this.updateLabels.bind(this);
     const hasMoreCommands = this.git.replay(
-      new (class extends GitCommandVisitor {
-        override visitTag(command: TagCommand): void {
-          updateLabels(command.taggedCommit);
+      new (class extends GitOperationVisitor {
+        override visitTag(op: TagOperation): void {
+          updateLabels(op.taggedCommit);
         }
       })(),
     );
@@ -177,7 +182,9 @@ export class GraphologySlide implements Slide {
       this.updateLabels(this.git.repo.head, { addHead: true });
     }
 
-    const commands = this.git.commands.filter(command => !!command).map(command => command.command);
+    const commands = this.git.operations
+      .map(command => command.command)
+      .filter(command => command !== null);
     this.code.innerHTML = "$ " + commands.join("<br />$ ");
     return hasMoreCommands;
   }
