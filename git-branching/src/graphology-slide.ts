@@ -10,6 +10,7 @@ import { NodeDisplayData, PartialButFor } from "sigma/types";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
 import { Commit, Git, GitCommandVisitor, TagCommand } from "./git.js";
+import { Layout } from "./layout.js";
 import { failWith } from "./util.js";
 
 const SPACE_BETWEEN_COMMITS = 3;
@@ -17,11 +18,6 @@ const SPACE_BETWEEN_BRANCHES = 4;
 const LABEL_SIZE = 10;
 const SHOW_INVISIBLES = false;
 const COLORS = ["#0000ec", "#dede00", "purple"];
-
-interface Position {
-  i: number;
-  j: number;
-}
 
 type Config = {
   showHead: boolean;
@@ -34,12 +30,10 @@ export class GraphologySlide implements Slide {
   private readonly graph: Graph;
   private readonly seed: string;
   private readonly showHead: boolean;
-  private readonly positionBySha1 = new Map<string, Position>();
   private readonly maxY = 8 * 3;
+  private layout: Layout | undefined;
   private sigmaInstance: Sigma | undefined;
   private git: Git;
-  private maxI = 0;
-  private maxJ = 0;
 
   /**
    * Adds a Graphology-based slide to the deck.
@@ -100,7 +94,7 @@ export class GraphologySlide implements Slide {
     this.git.singleStepMode = true;
     this.git.checkout("main");
     this.record(this.git);
-    this.calculateCommitPositions();
+    this.layout = Layout.create(this.git);
 
     this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer, {
       autoCenter: false,
@@ -110,7 +104,7 @@ export class GraphologySlide implements Slide {
     });
     const size = SHOW_INVISIBLES ? 3 : 0;
     this.graph.addNode("tr", {
-      x: this.maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
+      x: this.layout.maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
       y: this.maxY, // this.maxI * SPACE_BETWEEN_COMMITS,
       size: size,
       hidden: !SHOW_INVISIBLES,
@@ -129,6 +123,7 @@ export class GraphologySlide implements Slide {
   private onTransition(index: number): boolean {
     if (index === 0) {
       this.git = new Git(this.seed);
+      this.layout = undefined;
       this.resetSlide();
     }
 
@@ -142,10 +137,14 @@ export class GraphologySlide implements Slide {
       })(),
     );
 
-    const shiftUp = Math.max(0, this.maxY - this.maxI * SPACE_BETWEEN_COMMITS);
+    const layout = this.layout!;
+    const shiftUp = Math.max(
+      0,
+      this.maxY - layout.maxI * SPACE_BETWEEN_COMMITS,
+    );
     for (const commit of this.git.repo.commits) {
       if (!this.graph.hasNode(commit.sha1)) {
-        const position = this.positionBySha1.get(commit.sha1);
+        const position = layout.getPosition(commit);
         if (!position) {
           console.log("Could not find position for '%s'", commit.sha1);
         } else {
@@ -196,76 +195,6 @@ export class GraphologySlide implements Slide {
     } else {
       this.graph.removeNodeAttribute(sha1, "label");
       this.graph.setNodeAttribute(sha1, "forceLabel", false);
-    }
-  }
-
-  private calculateCommitPositions(): void {
-    if (this.positionBySha1.size) {
-      return;
-    }
-
-    // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
-
-    class CommitWrapper implements Position {
-      branchChildren: CommitWrapper[] = [];
-
-      constructor(
-        public readonly commit: Commit,
-        public i: number,
-        public j = 0,
-      ) {}
-    }
-
-    // First do a temporal topological sort, getting the i coordinates.
-    let i = 0;
-    const commitWrappers: CommitWrapper[] = [];
-    const commitWrapperBySha1 = new Map<string, CommitWrapper>();
-    this.git.temporalTopologicalWalk(commit => {
-      const wrapper = new CommitWrapper(commit, i++);
-      commitWrappers.push(wrapper);
-      commitWrapperBySha1.set(commit.sha1, wrapper);
-    });
-    this.maxI = i - 1;
-
-    // Next wrap all of the children.
-    commitWrappers.forEach(wrapper => {
-      wrapper.commit.branchChildren().forEach(commit => {
-        const child = commitWrapperBySha1.get(commit.sha1);
-        if (child) {
-          wrapper.branchChildren.push(child);
-        }
-      });
-    });
-
-    // Next, get the j coordinates.
-    const activeBranches: CommitWrapper[] = [];
-    this.maxJ = 0;
-    for (const wrapper of commitWrappers) {
-      let child = wrapper.branchChildren.pop();
-      if (child) {
-        let index = activeBranches.findIndex(w => w === child);
-        if (index >= 0) {
-          activeBranches[index] = wrapper;
-        }
-        // Remove chidren from activeBranches
-        child = wrapper.branchChildren.pop();
-        while (child) {
-          index = activeBranches.findIndex(w => w === child);
-          if (index > -1) {
-            activeBranches.splice(index, 1);
-          }
-          child = wrapper.branchChildren.pop();
-        }
-      } else {
-        activeBranches.push(wrapper);
-      }
-      wrapper.j = activeBranches.findIndex(w => w === wrapper);
-      this.maxJ = Math.max(wrapper.j, this.maxJ);
-    }
-
-    // Finally, publish the results.
-    for (const wrapper of commitWrappers) {
-      this.positionBySha1.set(wrapper.commit.sha1, wrapper);
     }
   }
 }
