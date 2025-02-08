@@ -177,7 +177,7 @@ export class GraphologySlide implements Slide {
       this.updateLabels(this.git.repo.head, { addHead: true });
     }
 
-    const commands = this.git.commands.map(command => command.command());
+    const commands = this.git.commands.filter(command => !!command).map(command => command.command);
     this.code.innerHTML = "$ " + commands.join("<br />$ ");
     return hasMoreCommands;
   }

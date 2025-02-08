@@ -87,6 +87,6 @@ Reveal.initialize({
   width: 1160,
   center: false,
   keyboard: true,
-  showHiddenSlides: false,
+  showHiddenSlides: true,
   markdown: {},
 });

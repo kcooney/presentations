@@ -42,7 +42,9 @@ class MermaidGitCommandVisitor extends git.GitCommandVisitor {
   }
 
   override visit(command: git.GitCommand) {
-    this.commands.push(command.command());
+    if (command.command) {
+      this.commands.push(command.command);
+    }
   }
 
   override visitCommit(command: git.CommitCommand) {

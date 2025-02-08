@@ -9,7 +9,7 @@ export class GitRecorder implements CommitGraph {
   /* If true, `pause()` is implicitly called after all git operations. */
   singleStepMode = false;
 
-  printCommands = true; // TODO: Pass this to commands.
+  printCommands = true;
   readonly repo: Repo;
   readonly _commands: GitCommand[] = [];
   private paused = true;
@@ -31,27 +31,27 @@ export class GitRecorder implements CommitGraph {
   }
 
   commit({ msg = "", reverse = false } = {}) {
-    this.enqueue(new CommitCommand(msg, reverse));
+    this.enqueue(new CommitCommand(this.printCommands, msg, reverse));
     return this;
   }
 
   branch(name: string) {
-    this.enqueue(new BranchCommand(name));
+    this.enqueue(new BranchCommand(this.printCommands, name));
     return this;
   }
 
   checkout(branch: string, { createBranch = false } = {}) {
-    this.enqueue(new CheckoutCommand(branch, createBranch));
+    this.enqueue(new CheckoutCommand(this.printCommands, branch, createBranch));
     return this;
   }
 
   merge(branch: string) {
-    this.enqueue(new MergeCommand(branch));
+    this.enqueue(new MergeCommand(this.printCommands, branch));
     return this;
   }
 
   tag(name: string) {
-    this.enqueue(new TagCommand(name));
+    this.enqueue(new TagCommand(this.printCommands, name));
     return this;
   }
 
@@ -63,7 +63,9 @@ export class GitRecorder implements CommitGraph {
     }
     commands.forEach(command => {
       command.execute(this.repo);
-      visitor?.visit(command);
+      if (visitor) {
+        command.visit(visitor);
+      }
     });
     this._commands.push(...commands);
     return this.queue.length > 0;
@@ -89,6 +91,10 @@ export class GitRecorder implements CommitGraph {
 export abstract class GitCommand {
   private _sha1: string | null = null;
 
+  constructor(
+    readonly printCommand: boolean,
+  ) {}
+
   /** The HEAD commit after the command ran. */
   get sha1(): string {
     if (this._sha1 === null) {
@@ -105,22 +111,31 @@ export abstract class GitCommand {
   protected abstract doExecute(_repo: Repo): void;
 
   /** Command representing this GitCommand (ex: `git branch`). */
-  command(): string {
-    throw Error("Not implemented");
+  get command(): string | null {
+    if (this._sha1 === null) {
+      throw Error("Cannot reference command before execute()");
+    }
+    if (!this.printCommand) {
+      return null;
+    }
+    return this.doGetCommand();
   }
+
+  protected abstract doGetCommand(): string;
 
   abstract visit(_visitor: GitCommandVisitor): void;
 }
 
 export class CommitCommand extends GitCommand {
   constructor(
+    printCommand: boolean,
     public readonly msg: string,
     public readonly reverse = false,
   ) {
-    super();
+    super(printCommand);
   }
 
-  override command(): string {
+  override doGetCommand(): string {
     if (this.msg) {
       return "git commit -m '" + this.msg + "'";
     }
@@ -141,10 +156,11 @@ export class CheckoutCommand extends GitCommand {
   private _detachedHead: boolean | undefined;
 
   constructor(
+    printCommand: boolean,
     public readonly branch: string,
     public readonly createBranch = false,
   ) {
-    super();
+    super(printCommand);
   }
 
   detachedHead(): boolean {
@@ -162,7 +178,7 @@ export class CheckoutCommand extends GitCommand {
     this._detachedHead = !repo.currentBranch;
   }
 
-  override command(): string {
+  override doGetCommand(): string {
     if (this.createBranch) {
       return "git checkout -b " + this.branch;
     }
@@ -176,11 +192,11 @@ export class CheckoutCommand extends GitCommand {
 }
 
 export class BranchCommand extends GitCommand {
-  constructor(public readonly branch: string) {
-    super();
+  constructor(printCommand: boolean, public readonly branch: string) {
+    super(printCommand);
   }
 
-  override command(): string {
+  override doGetCommand(): string {
     return "git branch " + this.branch;
   }
 
@@ -195,11 +211,11 @@ export class BranchCommand extends GitCommand {
 }
 
 export class MergeCommand extends GitCommand {
-  constructor(public readonly branch: string) {
-    super();
+  constructor(printCommand: boolean, public readonly branch: string) {
+    super(printCommand);
   }
 
-  override command(): string {
+  override doGetCommand(): string {
     return "git merge " + this.branch;
   }
 
@@ -216,11 +232,11 @@ export class MergeCommand extends GitCommand {
 export class TagCommand extends GitCommand {
   private _commit: Commit | null = null;
 
-  constructor(public readonly tagName: string) {
-    super();
+  constructor(printCommand: boolean, public readonly tagName: string) {
+    super(printCommand);
   }
 
-  override command(): string {
+  override doGetCommand(): string {
     return "git tag " + this.tagName;
   }
 
