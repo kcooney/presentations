@@ -9,7 +9,7 @@ import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import { Commit, Git, GitCommandVisitor, TagCommand } from "./git.js";
+import { Commit, GitRecorder, GitCommandVisitor, TagCommand } from "./git.js";
 import { Layout } from "./layout.js";
 import { failWith } from "./util.js";
 
@@ -33,7 +33,7 @@ export class GraphologySlide implements Slide {
   private readonly maxY = 8 * 3;
   private layout: Layout | undefined;
   private sigmaInstance: Sigma | undefined;
-  private git: Git;
+  private git: GitRecorder;
 
   /**
    * Adds a Graphology-based slide to the deck.
@@ -44,11 +44,11 @@ export class GraphologySlide implements Slide {
   static add(
     sectionId: string,
     config: Config = { showHead: false },
-    recorder: (git: Git) => void,
+    recorder: (git: GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
       return new (class extends GraphologySlide {
-        protected override record(git: Git): void {
+        protected override record(git: GitRecorder): void {
           recorder(git);
         }
       })(section, config);
@@ -68,7 +68,7 @@ export class GraphologySlide implements Slide {
       this.gitContainer.querySelector("code") ??
       failWith(() => `No code inside ${this.gitContainer}`);
     this.graph = new Graph({ type: "directed", allowSelfLoops: false });
-    this.git = new Git(this.seed);
+    this.git = new GitRecorder(this.seed);
     this.showHead = config.showHead;
   }
 
@@ -82,10 +82,10 @@ export class GraphologySlide implements Slide {
   onHideSlide() {
     this.sigmaInstance?.kill();
     this.gitContainer.style.display = "none";
-    this.git = new Git(this.seed);
+    this.git = new GitRecorder(this.seed);
   }
 
-  protected record(_git: Git): void {}
+  protected record(_git: GitRecorder): void {}
 
   private resetSlide() {
     this.sigmaInstance?.kill();
@@ -122,14 +122,14 @@ export class GraphologySlide implements Slide {
 
   private onTransition(index: number): boolean {
     if (index === 0) {
-      this.git = new Git(this.seed);
+      this.git = new GitRecorder(this.seed);
       this.layout = undefined;
       this.resetSlide();
     }
 
     const prevHead = this.git.repo.head;
     const updateLabels = this.updateLabels.bind(this);
-    const hasMoreCommands = this.git.run(
+    const hasMoreCommands = this.git.replay(
       new (class extends GitCommandVisitor {
         override visitTag(command: TagCommand): void {
           updateLabels(command.taggedCommit);

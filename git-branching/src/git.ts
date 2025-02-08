@@ -1,7 +1,11 @@
 import * as random from "./random.js";
 
+export interface CommitGraph {
+  temporalTopologicalWalk(callback: (commit: Commit) => void): void;
+}
+
 /** Records a series of Git operations to be shown on the slide. */
-export class Git {
+export class GitRecorder implements CommitGraph {
   /* If true, `pause()` is implicitly called after all git operations. */
   singleStepMode = false;
 
@@ -52,7 +56,7 @@ export class Git {
   }
 
   /** Runs the next set of commands; returns true if there are more commands. */
-  run(visitor: GitCommandVisitor | null = null): boolean {
+  replay(visitor: GitCommandVisitor | null = null): boolean {
     const commands = this.queue.shift();
     if (!commands) {
       return false; // run() called without any commands to play!
@@ -237,7 +241,9 @@ export class TagCommand extends GitCommand {
   }
 }
 
+/** Visitor interface for operations performed on a GitRecorder. */
 export class GitCommandVisitor {
+  /** Called for every command (before the GitCommand-subclass visit method is called). */
   visit(_command: GitCommand): void {}
 
   visitCommit(_command: CommitCommand): void {}
@@ -322,7 +328,7 @@ class InternalCommit implements Commit {
 }
 
 /** Simulates a git repository. */
-export class Repo {
+export class Repo implements CommitGraph {
   private _head: InternalCommit;
   private readonly _commits: InternalCommit[];
   private readonly commitMap = new Map<string, InternalCommit>();

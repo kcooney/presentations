@@ -98,7 +98,7 @@ export class MermaidSlide implements Slide {
   private readonly code: HTMLElement;
   private readonly mermaidElement: HTMLElement;
   private readonly seed: string;
-  private git: git.Git;
+  private git: git.GitRecorder;
 
   /**
    * Adds a Mermaid-based slide to the deck.
@@ -106,10 +106,10 @@ export class MermaidSlide implements Slide {
    * @param sectionId DOM ID for the section element of the slide.
    * @param recorder Callback to call to get the set of commands to show on the slide.
    */
-  static add(sectionId: string, recorder: (git: git.Git) => void): void {
+  static add(sectionId: string, recorder: (git: git.GitRecorder) => void): void {
     addSlide(sectionId, section => {
       return new (class extends MermaidSlide {
-        protected override record(git: git.Git): void {
+        protected override record(git: git.GitRecorder): void {
           recorder(git);
         }
       })(section);
@@ -132,7 +132,7 @@ export class MermaidSlide implements Slide {
         () => `No element with class "git-diagram" inside ${section.id}`,
       );
     this.mermaidElement.classList.add("mermaid");
-    this.git = new git.Git(this.seed);
+    this.git = new git.GitRecorder(this.seed);
   }
 
   onShowSlide() {
@@ -144,10 +144,10 @@ export class MermaidSlide implements Slide {
 
   onHideSlide() {
     this.gitContainer.style.display = "none";
-    this.git = new git.Git(this.seed);
+    this.git = new git.GitRecorder(this.seed);
   }
 
-  protected record(_git: git.Git): void {}
+  protected record(_git: git.GitRecorder): void {}
 
   private resetSlide() {
     this.git.checkout("main");
@@ -158,10 +158,10 @@ export class MermaidSlide implements Slide {
 
   private onTransition(index: number): boolean {
     if (index === 0) {
-      this.git = new git.Git(this.seed);
+      this.git = new git.GitRecorder(this.seed);
       this.resetSlide();
     }
-    const hasMoreCommands = this.git.run();
+    const hasMoreCommands = this.git.replay();
 
     const visitor = new MermaidGitCommandVisitor(this.git.repo);
     this.git.commands.forEach(command => command.visit(visitor));

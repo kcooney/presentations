@@ -1,4 +1,4 @@
-import { Commit, Git } from "./git.js";
+import { Commit, CommitGraph } from "./git.js";
 
 export interface Position {
   readonly i: number;
@@ -22,7 +22,7 @@ export class Layout {
     public readonly maxJ: number,
   ) {}
 
-  static create(git: Git): Layout {
+  static create(git: CommitGraph): Layout {
     // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
 
     // First do a temporal topological sort, getting the i coordinates.

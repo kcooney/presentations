@@ -1,10 +1,10 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
-import { Git } from "./git.js";
+import { GitRecorder } from "./git.js";
 import { GraphologySlide } from "./graphology-slide.js";
 import { MermaidSlide } from "./mermaid-slide.js";
 
-function addSlide(sectionId: string, recorder: (git: Git) => void): void {
+function addSlide(sectionId: string, recorder: (git: GitRecorder) => void): void {
   MermaidSlide.add(sectionId, recorder);
 }
 
