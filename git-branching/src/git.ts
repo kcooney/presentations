@@ -31,29 +31,40 @@ export class GitRecorder implements CommitGraph {
   }
 
   commit({ msg = "", reverse = false } = {}) {
-    this.enqueue(new CommitOperation(this.printCommands, msg, reverse));
+    this.enqueue(
+      new CommitOperation({
+        msg: msg,
+        reverse: reverse,
+        printCommand: this.printCommands,
+      }),
+    );
     return this;
   }
 
   branch(name: string) {
-    this.enqueue(new BranchOperation(this.printCommands, name));
+    this.enqueue(
+      new BranchOperation(name, { printCommand: this.printCommands }),
+    );
     return this;
   }
 
   checkout(branch: string, { createBranch = false } = {}) {
     this.enqueue(
-      new CheckoutOperation(this.printCommands, branch, createBranch),
+      new CheckoutOperation(branch, {
+        createBranch: createBranch,
+        printCommand: this.printCommands,
+      }),
     );
     return this;
   }
 
-  merge(branch: string) {
-    this.enqueue(new MergeOperation(this.printCommands, branch));
+  merge(ref: string) {
+    this.enqueue(new MergeOperation(ref, { printCommand: this.printCommands }));
     return this;
   }
 
   tag(name: string) {
-    this.enqueue(new TagOperation(this.printCommands, name));
+    this.enqueue(new TagOperation(name, { printCommand: this.printCommands }));
     return this;
   }
 
@@ -92,8 +103,19 @@ export class GitRecorder implements CommitGraph {
 
 export abstract class GitOperation {
   private _sha1: string | null = null;
+  private readonly printCommand: boolean;
+  private readonly _command: string;
 
-  constructor(readonly printCommand: boolean) {}
+  constructor({
+    command,
+    printCommand,
+  }: {
+    command: string;
+    printCommand: boolean;
+  }) {
+    this.printCommand = printCommand;
+    this._command = command;
+  }
 
   /** The HEAD commit after the command ran. */
   get sha1(): string {
@@ -112,34 +134,29 @@ export abstract class GitOperation {
 
   /** Command representing this GitOperation (ex: `git branch`). */
   get command(): string | null {
-    if (this._sha1 === null) {
-      throw Error("Cannot reference command before execute()");
-    }
-    if (!this.printCommand) {
-      return null;
-    }
-    return this.doGetCommand();
+    return this.printCommand ? this._command : null;
   }
-
-  protected abstract doGetCommand(): string;
 
   abstract visit(_visitor: GitOperationVisitor): void;
 }
 
 export class CommitOperation extends GitOperation {
-  constructor(
-    printCommand: boolean,
-    public readonly msg: string,
-    public readonly reverse = false,
-  ) {
-    super(printCommand);
-  }
+  public readonly msg: string;
+  public readonly reverse: boolean;
 
-  override doGetCommand(): string {
-    if (this.msg) {
-      return "git commit -m '" + this.msg + "'";
-    }
-    return "git commit";
+  constructor({
+    msg,
+    reverse = false,
+    printCommand = true,
+  }: {
+    msg: string;
+    reverse: boolean;
+    printCommand: boolean;
+  }) {
+    const cmd = msg ? "git commit -m '" + msg + "'" : "git commit";
+    super({ printCommand: printCommand, command: cmd });
+    this.reverse = reverse;
+    this.msg = msg;
   }
 
   protected doExecute(repo: Repo) {
@@ -153,14 +170,20 @@ export class CommitOperation extends GitOperation {
 }
 
 export class CheckoutOperation extends GitOperation {
+  public readonly branch: string;
+  public readonly createBranch: boolean;
   private _detachedHead: boolean | undefined;
 
   constructor(
-    printCommand: boolean,
-    public readonly branch: string,
-    public readonly createBranch = false,
+    branch: string,
+    { createBranch = false, printCommand = true } = {},
   ) {
-    super(printCommand);
+    const cmd = createBranch
+      ? "git checkout -b " + branch
+      : "git checkout " + branch;
+    super({ printCommand: printCommand, command: cmd });
+    this.branch = branch;
+    this.createBranch = createBranch;
   }
 
   detachedHead(): boolean {
@@ -178,13 +201,6 @@ export class CheckoutOperation extends GitOperation {
     this._detachedHead = !repo.currentBranch;
   }
 
-  override doGetCommand(): string {
-    if (this.createBranch) {
-      return "git checkout -b " + this.branch;
-    }
-    return "git checkout " + this.branch;
-  }
-
   override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitCheckout(this);
@@ -192,15 +208,12 @@ export class CheckoutOperation extends GitOperation {
 }
 
 export class BranchOperation extends GitOperation {
-  constructor(
-    printCommand: boolean,
-    public readonly branch: string,
-  ) {
-    super(printCommand);
-  }
+  public readonly branch: string;
 
-  override doGetCommand(): string {
-    return "git branch " + this.branch;
+  constructor(branch: string, { printCommand = true } = {}) {
+    const cmd = "git branch " + branch;
+    super({ printCommand: printCommand, command: cmd });
+    this.branch = branch;
   }
 
   protected doExecute(repo: Repo) {
@@ -214,19 +227,16 @@ export class BranchOperation extends GitOperation {
 }
 
 export class MergeOperation extends GitOperation {
-  constructor(
-    printCommand: boolean,
-    public readonly branch: string,
-  ) {
-    super(printCommand);
-  }
+  public readonly ref: string;
 
-  override doGetCommand(): string {
-    return "git merge " + this.branch;
+  constructor(ref: string, { printCommand = true } = {}) {
+    const cmd = "git merge " + ref;
+    super({ printCommand: printCommand, command: cmd });
+    this.ref = ref;
   }
 
   protected doExecute(repo: Repo) {
-    repo.merge(this.branch);
+    repo.merge(this.ref);
   }
 
   override visit(visitor: GitOperationVisitor) {
@@ -236,17 +246,13 @@ export class MergeOperation extends GitOperation {
 }
 
 export class TagOperation extends GitOperation {
+  public readonly tagName: string;
   private _commit: Commit | null = null;
 
-  constructor(
-    printCommand: boolean,
-    public readonly tagName: string,
-  ) {
-    super(printCommand);
-  }
-
-  override doGetCommand(): string {
-    return "git tag " + this.tagName;
+  constructor(name: string, { printCommand = true } = {}) {
+    const cmd = "git tag " + name;
+    super({ printCommand: printCommand, command: cmd });
+    this.tagName = name;
   }
 
   protected doExecute(repo: Repo) {

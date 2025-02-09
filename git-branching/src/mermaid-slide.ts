@@ -80,7 +80,7 @@ class MermaidGitOperationVisitor extends git.GitOperationVisitor {
 
   override visitMerge(op: git.MergeOperation) {
     const sha1 = op.sha1;
-    let line = `merge ${op.branch} id: "${sha1}"`;
+    let line = `merge ${op.ref} id: "${sha1}"`;
     if (this.head.sha1 == sha1) {
       line += " type: HIGHLIGHT";
     }
