@@ -21,6 +21,7 @@ import { failWith } from "./util.js";
 const SPACE_BETWEEN_COMMITS = 3;
 const SPACE_BETWEEN_BRANCHES = 4;
 const LABEL_SIZE = 10;
+const COMMIT_NODE_SIZE = 15;
 const SHOW_INVISIBLES = false;
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
@@ -162,7 +163,7 @@ export class GraphologySlide implements Slide {
             hover: commit.msg ? commit.sha1 + " " + commit.msg : commit.sha1,
             y: position.i * SPACE_BETWEEN_COMMITS + shiftUp,
             x: position.j * SPACE_BETWEEN_BRANCHES,
-            size: 15,
+            size: COMMIT_NODE_SIZE,
             color: color,
           });
           commit.parents.forEach(parentCommit => {

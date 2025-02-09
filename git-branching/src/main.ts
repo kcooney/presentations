@@ -3,6 +3,7 @@ import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
 import { GitRecorder } from "./git.js";
 import { GraphologySlide } from "./graphology-slide.js";
 import { MermaidSlide } from "./mermaid-slide.js";
+import { SvgSlide } from "./svg-slide.js";
 
 function addSlide(
   sectionId: string,
@@ -22,6 +23,17 @@ MermaidSlide.add("mermaid-demo-slide", git => {
 });
 
 GraphologySlide.add("graphology-demo-slide", { showHead: true }, git => {
+  git.commit().checkout("develop", { createBranch: true }).commit();
+  git.singleStepMode = false;
+  git.commit().commit().pause();
+  git.tag("origin/develop").pause();
+  git.checkout("main").pause();
+  git.merge("develop").pause();
+  git.commit().pause();
+  git.commit();
+});
+
+SvgSlide.add("svg-demo-slide", { showHead: true }, git => {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
   git.commit().commit().pause();
@@ -90,6 +102,6 @@ Reveal.initialize({
   width: 1160,
   center: false,
   keyboard: true,
-  showHiddenSlides: true,
+  showHiddenSlides: false,
   markdown: {},
 });

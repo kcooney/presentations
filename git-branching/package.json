@@ -8,6 +8,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@svgdotjs/svg.js": "^3.2.4",
     "graphology": "^0.25.4",
     "mermaid": "^11.4.1",
     "reveal.js": "^5.1.0",
