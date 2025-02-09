@@ -1,4 +1,4 @@
-import { ArrayXY, Line, SVG, Svg } from '@svgdotjs/svg.js'
+import { ArrayXY, Line, SVG, Svg } from "@svgdotjs/svg.js";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
 import {
@@ -70,7 +70,7 @@ export class SvgSlide implements Slide {
       section.querySelector(".git-diagram") ??
       failWith('No element with class "git-diagram"');
     this.draw = SVG();
-    this.draw.addTo(this.svgContainer)
+    this.draw.addTo(this.svgContainer);
     this.code =
       this.gitContainer.querySelector("code") ??
       failWith(() => `No code inside ${this.gitContainer}`);
@@ -86,7 +86,7 @@ export class SvgSlide implements Slide {
   }
 
   onHideSlide() {
-    this.draw.node.textContent = '';
+    this.draw.node.textContent = "";
     this.drawnCommits.clear();
     this.gitContainer.style.display = "none";
     this.git = new GitRecorder(this.seed);
@@ -95,7 +95,7 @@ export class SvgSlide implements Slide {
   protected record(_git: GitRecorder): void {}
 
   private resetSlide() {
-    this.draw.node.textContent = '';
+    this.draw.node.textContent = "";
     this.drawnCommits.clear();
 
     this.git.singleStepMode = true;
@@ -103,7 +103,7 @@ export class SvgSlide implements Slide {
     this.record(this.git);
     this.layout = Layout.create(this.git);
 
-    const [x, y] = this.toArrayXY({i: 0, j: this.layout.maxJ});
+    const [x, y] = this.toArrayXY({ i: this.layout.maxI, j: this.layout.maxJ });
     this.draw.size(x + LEFT_MARGIN * 2, y + TOP_MARGIN * 2);
   }
 
@@ -125,7 +125,7 @@ export class SvgSlide implements Slide {
     );
 
     const layout = this.layout!;
-  
+
     for (const commit of this.git.repo.commits) {
       if (!this.drawnCommits.has(commit.sha1)) {
         const position = layout.getPosition(commit);
@@ -134,9 +134,16 @@ export class SvgSlide implements Slide {
         } else {
           const color = getColor(position);
           // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
-         
+
           const [x, y] = this.toArrayXY(position);
-          console.log("commit: '%s', i=%d; j=%d; pos=(%d, %d)", commit.msg, position.i, position.j, x, y)
+          console.log(
+            "commit: '%s', i=%d; j=%d; pos=(%d, %d)",
+            commit.msg,
+            position.i,
+            position.j,
+            x,
+            y,
+          );
           const circleElement = this.draw.circle(COMMIT_RADIUS * 2);
           circleElement.center(x, y).fill(color);
           this.drawnCommits.set(commit.sha1, circleElement.node);
@@ -147,14 +154,20 @@ export class SvgSlide implements Slide {
           commit.parents.forEach(parentCommit => {
             const parentPos = layout.getPosition(parentCommit);
             if (parentPos) {
-              const lineColor = (parentCommit.sha1 === firstParentSha1) ? color : getColor(parentPos);
-              const [x2, y2] = this.toArrayXY(parentPos)
-              const line = new Line({x1: x, y1: y, x2: x2, y2: y2});
-              line.stroke({width: LINE_WIDTH, color: lineColor});
+              const lineColor =
+                parentCommit.sha1 === firstParentSha1
+                  ? color
+                  : getColor(parentPos);
+              const [x2, y2] = this.toArrayXY(parentPos);
+              const line = new Line({ x1: x, y1: y, x2: x2, y2: y2 });
+              line.stroke({ width: LINE_WIDTH, color: lineColor });
               line.addTo(this.draw);
 
               const parentCommitNode = this.drawnCommits.get(parentCommit.sha1);
-              parentCommitNode?.parentElement?.insertBefore(line.node, parentCommitNode);
+              parentCommitNode?.parentElement?.insertBefore(
+                line.node,
+                parentCommitNode,
+              );
             }
           });
         }
@@ -182,10 +195,11 @@ export class SvgSlide implements Slide {
 
   private toArrayXY(position: Position): ArrayXY {
     // Note that for SVG, the top left is (0, 0).
-    // Position.i decreases towards zero as commit time increases.
+    // Position.i increases from zero as commit time increases.
     // Position.j is zero for the first branch, and increases for each branch.
     return [
-      (position.j * SPACE_BETWEEN_BRANCHES) * SCALE + LEFT_MARGIN,
-      ((this.maxY - position.i) * SPACE_BETWEEN_COMMITS) * SCALE + TOP_MARGIN];
+      position.j * SPACE_BETWEEN_BRANCHES * SCALE + LEFT_MARGIN,
+      position.i * SPACE_BETWEEN_COMMITS * SCALE + TOP_MARGIN,
+    ];
   }
 }

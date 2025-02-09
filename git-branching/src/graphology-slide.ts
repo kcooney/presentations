@@ -36,7 +36,6 @@ export class GraphologySlide implements Slide {
   private readonly graph: Graph;
   private readonly seed: string;
   private readonly showHead: boolean;
-  private readonly maxY = 8 * 3;
   private layout: Layout | undefined;
   private sigmaInstance: Sigma | undefined;
   private git: GitRecorder;
@@ -111,7 +110,7 @@ export class GraphologySlide implements Slide {
     const size = SHOW_INVISIBLES ? 3 : 0;
     this.graph.addNode("tr", {
       x: this.layout.maxJ * SPACE_BETWEEN_BRANCHES + LABEL_SIZE,
-      y: this.maxY, // this.maxI * SPACE_BETWEEN_COMMITS,
+      y: this.layout.maxI * SPACE_BETWEEN_COMMITS,
       size: size,
       hidden: !SHOW_INVISIBLES,
     });
@@ -144,10 +143,6 @@ export class GraphologySlide implements Slide {
     );
 
     const layout = this.layout!;
-    const shiftUp = Math.max(
-      0,
-      this.maxY - layout.maxI * SPACE_BETWEEN_COMMITS,
-    );
     for (const commit of this.git.repo.commits) {
       if (!this.graph.hasNode(commit.sha1)) {
         const position = layout.getPosition(commit);
@@ -156,12 +151,15 @@ export class GraphologySlide implements Slide {
         } else {
           const color = COLORS[position.j % COLORS.length];
           const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
+          // Note that for Sigma, the bottom left is (0, 0).
+          // Position.i increases from zero as commit time increases.
+          // Position.j is zero for the first branch, and increases for each branch.
           this.graph.addNode(commit.sha1, {
             type: "commit",
             label: label || null,
             forceLabel: !!label,
             hover: commit.msg ? commit.sha1 + " " + commit.msg : commit.sha1,
-            y: position.i * SPACE_BETWEEN_COMMITS + shiftUp,
+            y: (layout.maxI - position.i) * SPACE_BETWEEN_COMMITS,
             x: position.j * SPACE_BETWEEN_BRANCHES,
             size: COMMIT_NODE_SIZE,
             color: color,

@@ -10,7 +10,7 @@ class CommitWrapper implements Position {
 
   constructor(
     public readonly commit: Commit,
-    public i: number,
+    public i = 0,
     public j = 0,
   ) {}
 }
@@ -26,15 +26,17 @@ export class Layout {
     // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
 
     // First do a temporal topological sort, getting the i coordinates.
-    let i = 0;
     const commitWrappers: CommitWrapper[] = [];
     const commitWrapperBySha1 = new Map<string, CommitWrapper>();
     git.temporalTopologicalWalk(commit => {
-      const wrapper = new CommitWrapper(commit, i++);
+      const wrapper = new CommitWrapper(commit);
       commitWrappers.push(wrapper);
       commitWrapperBySha1.set(commit.sha1, wrapper);
     });
-    const maxI = i - 1;
+    const maxI = commitWrappers.length - 1;
+    commitWrappers.forEach((commitWrapper, i) => {
+      commitWrapper.i = maxI - i;
+    });
 
     // Next wrap all of the children.
     commitWrappers.forEach(wrapper => {
