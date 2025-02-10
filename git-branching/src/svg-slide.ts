@@ -10,14 +10,14 @@ import {
 import { Layout, Position } from "./layout.js";
 import { failWith } from "./util.js";
 
-const LEFT_MARGIN = 13;
-const TOP_MARGIN = 13;
-const SPACE_BETWEEN_COMMITS = 6;
-const SPACE_BETWEEN_BRANCHES = 5;
-const LINE_WIDTH = 7;
+const LEFT_MARGIN = 2;
+const RIGHT_MARGIN = 2;
+const TOP_MARGIN = 2;
+const BOTTOM_MARGIN = 2;
+const SPACE_BETWEEN_COMMITS = 60;
+const SPACE_BETWEEN_BRANCHES = 50;
+const LINE_WIDTH = 8;
 const COMMIT_RADIUS = 11;
-
-const SCALE = 10;
 
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
@@ -104,7 +104,10 @@ export class SvgSlide implements Slide {
     this.layout = Layout.create(this.git);
 
     const [x, y] = this.toArrayXY({ i: this.layout.maxI, j: this.layout.maxJ });
-    this.draw.size(x + LEFT_MARGIN * 2, y + TOP_MARGIN * 2);
+    this.draw.size(
+      x + RIGHT_MARGIN + COMMIT_RADIUS,
+      y + BOTTOM_MARGIN + COMMIT_RADIUS,
+    );
   }
 
   private onTransition(index: number): boolean {
@@ -195,8 +198,8 @@ export class SvgSlide implements Slide {
     // Position.i increases from zero as commit time increases.
     // Position.j is zero for the first branch, and increases for each branch.
     return [
-      position.j * SPACE_BETWEEN_BRANCHES * SCALE + LEFT_MARGIN,
-      position.i * SPACE_BETWEEN_COMMITS * SCALE + TOP_MARGIN,
+      position.j * SPACE_BETWEEN_BRANCHES + LEFT_MARGIN + COMMIT_RADIUS,
+      position.i * SPACE_BETWEEN_COMMITS + TOP_MARGIN + COMMIT_RADIUS,
     ];
   }
 }
