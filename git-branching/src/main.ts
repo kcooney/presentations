@@ -36,7 +36,12 @@ GraphologySlide.add("graphology-demo-slide", { showHead: true }, git => {
 SvgSlide.add("svg-demo-slide", { showHead: true }, git => {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
-  git.commit().commit().pause();
+  git.commit();
+  // added below
+  git.commit().checkout("deploy", { createBranch: true }).commit({ msg: "deploy to dev"});
+  git.checkout("develop");
+  // added above
+  git.commit().pause();
   git.tag("origin/develop").pause();
   git.checkout("main").pause();
   git.merge("develop").pause();

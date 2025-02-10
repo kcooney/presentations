@@ -395,7 +395,7 @@ export class Repo implements CommitGraph {
     const visited = new Set<string>();
 
     function ordering(a: InternalCommit, b: InternalCommit): number {
-      return a.commitTime - b.commitTime;
+      return b.commitTime - a.commitTime;
     }
 
     function dfs(commit: InternalCommit): void {
