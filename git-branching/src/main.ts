@@ -97,11 +97,14 @@ addSlide("head-slide", git => {
   git.commit({ msg: "One more fix" });
 });
 
+const urlParams = new URLSearchParams(window.location.search);
+const showHiddenSlides = urlParams.has("showHidden");
+
 Reveal.initialize({
   plugins: [Markdown],
   width: 1160,
   center: false,
   keyboard: true,
-  showHiddenSlides: false,
+  showHiddenSlides: showHiddenSlides,
   markdown: {},
 });

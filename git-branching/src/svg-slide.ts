@@ -1,4 +1,4 @@
-import { ArrayXY, Line, SVG, Svg } from "@svgdotjs/svg.js";
+import { ArrayXY, Line, Path, Shape, SVG, Svg } from "@svgdotjs/svg.js";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
 import {
@@ -12,7 +12,7 @@ import { failWith } from "./util.js";
 
 const LEFT_MARGIN = 13;
 const TOP_MARGIN = 13;
-const SPACE_BETWEEN_COMMITS = 4;
+const SPACE_BETWEEN_COMMITS = 6;
 const SPACE_BETWEEN_BRANCHES = 5;
 const LINE_WIDTH = 7;
 const COMMIT_RADIUS = 11;
@@ -135,37 +135,23 @@ export class SvgSlide implements Slide {
           const color = getColor(position);
           // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
 
-          const [x, y] = this.toArrayXY(position);
-          console.log(
-            "commit: '%s', i=%d; j=%d; pos=(%d, %d)",
-            commit.msg,
-            position.i,
-            position.j,
-            x,
-            y,
-          );
+          const commitXY = this.toArrayXY(position);
           const circleElement = this.draw.circle(COMMIT_RADIUS * 2);
-          circleElement.center(x, y).fill(color);
+          circleElement.center(...commitXY).fill(color);
           this.drawnCommits.set(commit.sha1, circleElement.node);
 
           // Color of the line to the first parent commit is the same as this commit.
           // Color of the line to the other parents are the color of the parent.
-          const firstParentSha1 = commit.parents[0]?.sha1 || "";
-          commit.parents.forEach(parentCommit => {
+          commit.parents.forEach((parentCommit, index) => {
             const parentPos = layout.getPosition(parentCommit);
             if (parentPos) {
-              const lineColor =
-                parentCommit.sha1 === firstParentSha1
-                  ? color
-                  : getColor(parentPos);
-              const [x2, y2] = this.toArrayXY(parentPos);
-              const line = new Line({ x1: x, y1: y, x2: x2, y2: y2 });
-              line.stroke({ width: LINE_WIDTH, color: lineColor });
-              line.addTo(this.draw);
+              const lineColor = index == 0 ? color : getColor(parentPos);
+              const path = SvgSlide.path(this.toArrayXY(parentPos), commitXY);
+              path.stroke({ width: LINE_WIDTH, color: lineColor }).fill();
 
               const parentCommitNode = this.drawnCommits.get(parentCommit.sha1);
               parentCommitNode?.parentElement?.insertBefore(
-                line.node,
+                path.node,
                 parentCommitNode,
               );
             }
@@ -191,6 +177,17 @@ export class SvgSlide implements Slide {
     if (!commit && addHead) {
       throw new Error("");
     }
+  }
+
+  private static path(start: ArrayXY, end: ArrayXY): Shape {
+    const [x1, y1] = start;
+    const [x2, y2] = end;
+    if (x1 == x2) {
+      return new Line({ x1: x1, y1: y1, x2: x2, y2: y2 });
+    }
+    return new Path({
+      d: `M${x1},${y1} C${x1},${y2} ${x2},${y1} ${x2},${y2}`,
+    }).fill("none");
   }
 
   private toArrayXY(position: Position): ArrayXY {
