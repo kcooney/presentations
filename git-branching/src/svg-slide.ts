@@ -18,6 +18,8 @@ const SPACE_BETWEEN_COMMITS = 60;
 const SPACE_BETWEEN_BRANCHES = 50;
 const LINE_WIDTH = 8;
 const COMMIT_RADIUS = 11;
+const TEXT_INDENT = 8;
+const MAX_TEXT_WIDTH = 500;
 
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
@@ -36,9 +38,9 @@ export class SvgSlide implements Slide {
   private readonly code: HTMLElement;
   private readonly seed: string;
   private readonly showHead: boolean;
-  private readonly maxY = 8 * 3;
   private readonly drawnCommits = new Map<string, SVGElement>();
   private layout: Layout | undefined;
+  private textAnchorX = 0;
   private git: GitRecorder;
 
   /**
@@ -104,8 +106,9 @@ export class SvgSlide implements Slide {
     this.layout = Layout.create(this.git);
 
     const [x, y] = this.toArrayXY({ i: this.layout.maxI, j: this.layout.maxJ });
+    this.textAnchorX = x + COMMIT_RADIUS + TEXT_INDENT;
     this.draw.size(
-      x + RIGHT_MARGIN + COMMIT_RADIUS,
+      x + RIGHT_MARGIN + COMMIT_RADIUS + TEXT_INDENT + MAX_TEXT_WIDTH,
       y + BOTTOM_MARGIN + COMMIT_RADIUS,
     );
   }
@@ -142,6 +145,13 @@ export class SvgSlide implements Slide {
           const circleElement = this.draw.circle(COMMIT_RADIUS * 2);
           circleElement.center(...commitXY).fill(color);
           this.drawnCommits.set(commit.sha1, circleElement.node);
+
+          const msg = commit.msg ? `${commit.sha1} ${commit.msg}`  : commit.sha1;
+          const text = this.draw.text(msg).font({
+            family: 'Arial',
+            size: '14pt',
+          });
+          text.amove(this.textAnchorX, commitXY[1] + (text.bbox().height / 2) - 3);
 
           // Color of the line to the first parent commit is the same as this commit.
           // Color of the line to the other parents are the color of the parent.
