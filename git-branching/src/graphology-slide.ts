@@ -29,7 +29,7 @@ type Config = {
   showHead: boolean;
 };
 
-export class GraphologySlide implements Slide {
+export class GraphologyGitSlide implements Slide {
   private readonly gitContainer: HTMLElement;
   private readonly sigmaContainer: HTMLElement;
   private readonly code: HTMLElement;
@@ -52,7 +52,7 @@ export class GraphologySlide implements Slide {
     recorder: (git: GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
-      return new (class extends GraphologySlide {
+      return new (class extends GraphologyGitSlide {
         protected override record(git: GitRecorder): void {
           recorder(git);
         }

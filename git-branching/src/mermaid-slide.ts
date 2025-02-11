@@ -96,7 +96,7 @@ class MermaidGitOperationVisitor extends git.GitOperationVisitor {
   }
 }
 
-export class MermaidSlide implements Slide {
+export class MermaidGitSlide implements Slide {
   private readonly gitContainer: HTMLElement;
   private readonly code: HTMLElement;
   private readonly mermaidElement: HTMLElement;
@@ -114,7 +114,7 @@ export class MermaidSlide implements Slide {
     recorder: (git: git.GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
-      return new (class extends MermaidSlide {
+      return new (class extends MermaidGitSlide {
         protected override record(git: git.GitRecorder): void {
           recorder(git);
         }

@@ -4,7 +4,7 @@ import { GitRecorder } from "./git-recorder.js";
 import { Config, SvgGitRenderer } from "./svg-render.js";
 import { failWith } from "./util.js";
 
-export class SvgSlide implements Slide {
+export class GitSvgSlide implements Slide {
   private readonly gitContainer: HTMLElement;
   private readonly svgContainer: HTMLElement;
   private readonly code: HTMLElement;
@@ -24,7 +24,7 @@ export class SvgSlide implements Slide {
     recorder: (git: GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
-      return new (class extends SvgSlide {
+      return new (class extends GitSvgSlide {
         protected override record(git: GitRecorder): void {
           recorder(git);
         }

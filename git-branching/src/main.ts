@@ -1,18 +1,18 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
 import { GitRecorder } from "./git-recorder.js";
-import { GraphologySlide } from "./graphology-slide.js";
-import { MermaidSlide } from "./mermaid-slide.js";
-import { SvgSlide } from "./svg-slide.js";
+import { GraphologyGitSlide } from "./graphology-slide.js";
+import { MermaidGitSlide } from "./mermaid-slide.js";
+import { GitSvgSlide } from "./svg-slide.js";
 
 function addSlide(
   sectionId: string,
   recorder: (git: GitRecorder) => void,
 ): void {
-  MermaidSlide.add(sectionId, recorder);
+  MermaidGitSlide.add(sectionId, recorder);
 }
 
-MermaidSlide.add("mermaid-demo-slide", git => {
+MermaidGitSlide.add("mermaid-demo-slide", git => {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
   git.commit().commit().pause();
@@ -22,7 +22,7 @@ MermaidSlide.add("mermaid-demo-slide", git => {
   git.commit();
 });
 
-GraphologySlide.add("graphology-demo-slide", { showHead: true }, git => {
+GraphologyGitSlide.add("graphology-demo-slide", { showHead: true }, git => {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
   git.commit().commit().pause();
@@ -33,7 +33,7 @@ GraphologySlide.add("graphology-demo-slide", { showHead: true }, git => {
   git.commit();
 });
 
-SvgSlide.add("svg-demo-slide", { showHead: true }, git => {
+GitSvgSlide.add("svg-demo-slide", { showHead: true }, git => {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
   git.commit();
