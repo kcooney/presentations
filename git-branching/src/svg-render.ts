@@ -40,11 +40,11 @@ export class SvgGitRenderer {
     config: Config = { showHead: false },
   ) {
     if (graph instanceof GitRecorder) {
-        this.recorder = graph;
-        this.repo = graph.repo;
+      this.recorder = graph;
+      this.repo = graph.repo;
     } else {
-        this.recorder = null;
-        this.repo = graph;
+      this.recorder = null;
+      this.repo = graph;
     }
     this.config = config;
     this.draw = SVG();
@@ -53,11 +53,11 @@ export class SvgGitRenderer {
 
   reset(graph: Repo | GitRecorder | null) {
     if (graph instanceof GitRecorder) {
-        this.recorder = graph;
-        this.repo = graph.repo;
+      this.recorder = graph;
+      this.repo = graph.repo;
     } else {
-        this.recorder = null;
-        this.repo = graph;
+      this.recorder = null;
+      this.repo = graph;
     }
     this.draw.node.textContent = "";
     this.drawnCommits.clear();
