@@ -9,12 +9,12 @@ import { Settings } from "sigma/settings";
 import { NodeDisplayData, PartialButFor } from "sigma/types";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
+import { Commit } from "./git.js";
 import {
-  Commit,
   GitRecorder,
   GitOperationVisitor,
   TagOperation,
-} from "./git.js";
+} from "./git-recorder.js";
 import { Layout } from "./layout.js";
 import { failWith } from "./util.js";
 
@@ -99,7 +99,7 @@ export class GraphologySlide implements Slide {
     this.git.singleStepMode = true;
     this.git.checkout("main");
     this.record(this.git);
-    this.layout = Layout.create(this.git);
+    this.layout = this.git.createLayout();
 
     this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer, {
       autoCenter: false,

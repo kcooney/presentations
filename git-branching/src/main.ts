@@ -1,6 +1,6 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
-import { GitRecorder } from "./git.js";
+import { GitRecorder } from "./git-recorder.js";
 import { GraphologySlide } from "./graphology-slide.js";
 import { MermaidSlide } from "./mermaid-slide.js";
 import { SvgSlide } from "./svg-slide.js";
@@ -38,7 +38,10 @@ SvgSlide.add("svg-demo-slide", { showHead: true }, git => {
   git.singleStepMode = false;
   git.commit();
   // added below
-  git.commit().checkout("deploy", { createBranch: true }).commit({ msg: "deploy to dev"});
+  git
+    .commit()
+    .checkout("deploy", { createBranch: true })
+    .commit({ msg: "deploy to dev" });
   git.checkout("develop");
   // added above
   git.commit().pause();

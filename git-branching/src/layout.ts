@@ -1,4 +1,4 @@
-import { Commit, CommitGraph } from "./git.js";
+import { Commit, Repo } from "./git.js";
 
 export interface Position {
   readonly i: number;
@@ -22,13 +22,13 @@ export class Layout {
     public readonly maxJ: number,
   ) {}
 
-  static create(git: CommitGraph): Layout {
+  static create(repo: Repo): Layout {
     // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
 
     // First do a temporal topological sort, getting the i coordinates.
     const commitWrappers: CommitWrapper[] = [];
     const commitWrapperBySha1 = new Map<string, CommitWrapper>();
-    git.temporalTopologicalWalk(commit => {
+    repo.temporalTopologicalWalk(commit => {
       const wrapper = new CommitWrapper(commit);
       commitWrappers.push(wrapper);
       commitWrapperBySha1.set(commit.sha1, wrapper);

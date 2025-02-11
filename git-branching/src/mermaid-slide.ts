@@ -1,7 +1,8 @@
 import mermaid from "mermaid";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import * as git from "./git.js";
+import { Commit, Repo } from "./git.js";
+import * as git from "./git-recorder.js";
 import { failWith } from "./util.js";
 
 mermaid.initialize({ startOnLoad: false });
@@ -33,10 +34,10 @@ class TaggableAction extends Action {
 class MermaidGitOperationVisitor extends git.GitOperationVisitor {
   readonly actions: Action[] = [];
   readonly commands: string[] = [];
-  head: git.Commit;
+  head: Commit;
   readonly taggableActions = new Map<string, TaggableAction>();
 
-  constructor(repo: git.Repo) {
+  constructor(repo: Repo) {
     super();
     this.head = repo.head;
   }
