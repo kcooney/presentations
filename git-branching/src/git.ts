@@ -77,7 +77,7 @@ export class Repo {
   private readonly commitMap = new Map<string, InternalCommit>();
   private readonly rand: random.Random;
   private readonly branches = new Map<string, InternalCommit>();
-  private readonly tags = new Map<string, InternalCommit>();
+  private readonly _tags = new Map<string, InternalCommit>();
   private curBranch: string; // An empty string for "detached head"
 
   constructor(seed: string) {
@@ -99,10 +99,15 @@ export class Repo {
     return this._commits;
   }
 
+  get tags(): ReadonlyMap<string, Commit> {
+    return this._tags;
+  }
+
   getCommit(sha1: string): Commit | undefined {
     return this.commitMap.get(sha1);
   }
 
+  /** Depth-first search that visits commits from latest to earliest */
   temporalTopologicalWalk(callback: (commit: Commit) => void): void {
     const visited = new Set<string>();
 
@@ -139,10 +144,10 @@ export class Repo {
     if (!name) {
       throw Error("Tag names cannot be emtpy");
     }
-    if (this.tags.has(name)) {
+    if (this._tags.has(name)) {
       throw Error("Already a tag with name '" + name + "'");
     }
-    this.tags.set(name, this._head);
+    this._tags.set(name, this._head);
     this._head.addTag(name);
     return this._head;
   }

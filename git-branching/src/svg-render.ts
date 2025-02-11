@@ -124,6 +124,9 @@ export class SvgGitRenderer {
         }
       }
     }
+    for (const commit of this.repo.tags.values()) {
+      this.updateLabels(commit);
+    }
     if (!!this.head && this.head !== this.repo.head) {
       this.updateLabels(this.head);
     }
@@ -143,7 +146,7 @@ export class SvgGitRenderer {
 
   private updateLabels(commit: Commit, { addHead = false } = {}) {
     if (!commit && addHead) {
-      throw new Error("");
+      return;
     }
   }
 
