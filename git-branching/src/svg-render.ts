@@ -20,9 +20,9 @@ function getColor(position: Position): string {
   return COLORS[position.j % COLORS.length] || "";
 }
 
-export type Config = {
-  showHead: boolean;
-};
+export interface Config {
+  readonly showHead?: boolean;
+}
 
 export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SVGElement>();
@@ -37,7 +37,7 @@ export class SvgGitRenderer {
   constructor(
     container: HTMLElement,
     graph: Repo | GitRecorder,
-    config: Config = { showHead: false },
+    config: Config = {},
   ) {
     if (graph instanceof GitRecorder) {
       this.recorder = graph;

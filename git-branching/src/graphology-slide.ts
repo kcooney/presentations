@@ -25,9 +25,9 @@ const COMMIT_NODE_SIZE = 15;
 const SHOW_INVISIBLES = false;
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
-type Config = {
-  showHead: boolean;
-};
+interface Config {
+  showHead?: boolean;
+}
 
 export class GraphologyGitSlide implements Slide {
   private readonly gitContainer: HTMLElement;
@@ -74,7 +74,7 @@ export class GraphologyGitSlide implements Slide {
       failWith(() => `No code inside ${this.gitContainer}`);
     this.graph = new Graph({ type: "directed", allowSelfLoops: false });
     this.git = new GitRecorder(this.seed);
-    this.showHead = config.showHead;
+    this.showHead = config.showHead || false;
   }
 
   onShowSlide() {
