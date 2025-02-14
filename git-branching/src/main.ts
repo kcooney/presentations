@@ -57,7 +57,7 @@ GitSvgSlide.add("svg-demo-slide", { showHead: true }, svgDemoRecorder);
 
 GitSvgSlide.add(
   "svg-horizontal-demo-slide",
-  { showHead: true, horizonal: true },
+  { showHead: true, horizontal: true },
   svgDemoRecorder,
 );
 
