@@ -5,7 +5,8 @@
     "lint": "eslint src",
     "prebundle": "tsc",
     "bundle": "esbuild ./dist/main.js --bundle --sourcemap --outfile=public/bundle.js",
-    "test": "jest"
+    "test": "jest",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@svgdotjs/svg.js": "^3.2.4",

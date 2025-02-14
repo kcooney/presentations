@@ -23,20 +23,30 @@
         display: none;
       }
 
-      .sigma-container {
-        height: 500px;
-        width: 500px;
-      }
-
-      .right {
+      .git-container .right {
         float: right;
         width: 600px;
       }
 
-      .left {
+      .git-container .left {
         float: none;
         width: auto;
         overflow: hidden;
+      }
+
+      .git-container .top {
+        float: none;
+        height: auto;
+      }
+
+      .git-container .bottom {
+        float: bottom;
+        overflow: hidden;
+      }
+
+      .sigma-container {
+        height: 500px;
+        width: 500px;
       }
     </style>
   </head>
@@ -79,6 +89,17 @@ chapter of [Pro Git](https://git-scm.com/book/en/v2/)
             </div>
             <div class="left">
               <div style="text-align: left" class="git-diagram"></div>
+            </div>
+          </div>
+        </section>
+        <section id="svg-horizontal-demo-slide" data-visibility="hidden">
+          <h2>SVG Horizontal Demo</h2>
+          <div class="git-container">
+            <div class="top">
+              <div class="git-diagram"></div>
+            </div>
+            <div class="bottom">
+              <pre><code></code></pre>
             </div>
           </div>
         </section>

@@ -6,6 +6,7 @@ import { GitRecorder } from "./git-recorder";
 const LEFT_MARGIN = 2;
 const RIGHT_MARGIN = 2;
 const TOP_MARGIN = 2;
+const HORIZONTAL_EXTRA_TOP_MARGIN = 10;
 const BOTTOM_MARGIN = 2;
 const SPACE_BETWEEN_COMMITS = 60;
 const SPACE_BETWEEN_BRANCHES = 50;
@@ -13,6 +14,30 @@ const LINE_WIDTH = 8;
 const COMMIT_RADIUS = 11;
 const TEXT_INDENT = 8;
 const MAX_TEXT_WIDTH = 500;
+
+type Font = {
+  family?: string;
+  size?: string;
+  weight?:
+    | "normal"
+    | "bold"
+    | "bolder"
+    | "lighter"
+    | 100
+    | 200
+    | 300
+    | 400
+    | 500
+    | 600
+    | 700
+    | 800
+    | 900;
+};
+
+const COMMIT_FONT: Font = {
+  family: "Arial",
+  size: "14pt",
+};
 
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
@@ -22,6 +47,7 @@ function getColor(position: Position): string {
 
 export interface Config {
   readonly showHead?: boolean;
+  readonly horizonal?: boolean;
 }
 
 export class SvgGitRenderer {
@@ -46,6 +72,7 @@ export class SvgGitRenderer {
       this.recorder = null;
       this.repo = graph;
     }
+    container.classList.add("svg-git");
     this.config = config;
     this.draw = SVG();
     this.draw.addTo(container);
@@ -86,21 +113,23 @@ export class SvgGitRenderer {
         } else {
           const color = getColor(position);
           // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
-
-          const commitXY = this.toArrayXY(position);
           const circleElement = this.draw.circle(COMMIT_RADIUS * 2);
+          circleElement.node.classList.add("commit");
+          const commitXY = this.toArrayXY(position);
           circleElement.center(...commitXY).fill(color);
           this.drawnCommits.set(commit.sha1, circleElement.node);
 
           const msg = commit.msg ? `${commit.sha1} ${commit.msg}` : commit.sha1;
-          const text = this.draw.text(msg).font({
-            family: "Arial",
-            size: "14pt",
-          });
-          text.amove(
-            this.textAnchorX,
-            commitXY[1] + text.bbox().height / 2 - 3,
-          );
+          if (this.config.horizonal) {
+            circleElement.element("title").words(msg); // Add hover text
+          } else {
+            // Show commit sha1 and message to the right of the commit.
+            const text = this.draw.text(msg).font(COMMIT_FONT);
+            text.amove(
+              this.textAnchorX,
+              commitXY[1] + text.bbox().height / 2 - 3,
+            );
+          }
 
           // Color of the line to the first parent commit is the same as this commit.
           // Color of the line to the other parents are the color of the parent.
@@ -165,9 +194,12 @@ export class SvgGitRenderer {
     // Note that for SVG, the top left is (0, 0).
     // Position.i increases from zero as commit time increases.
     // Position.j is zero for the first branch, and increases for each branch.
-    return [
-      position.j * SPACE_BETWEEN_BRANCHES + LEFT_MARGIN + COMMIT_RADIUS,
-      position.i * SPACE_BETWEEN_COMMITS + TOP_MARGIN + COMMIT_RADIUS,
-    ];
+    let x = position.j * SPACE_BETWEEN_BRANCHES + COMMIT_RADIUS;
+    let y = position.i * SPACE_BETWEEN_COMMITS + COMMIT_RADIUS;
+
+    if (this.config.horizonal) {
+      [x, y] = [y + HORIZONTAL_EXTRA_TOP_MARGIN, x];
+    }
+    return [x + LEFT_MARGIN, y + TOP_MARGIN];
   }
 }
