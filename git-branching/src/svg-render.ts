@@ -50,6 +50,11 @@ export interface Config {
   readonly horizonal?: boolean;
 }
 
+const CONFIG_DEFAULTS: Config = {
+  showHead: false,
+  horizonal: false,
+};
+
 export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SVGElement>();
   private readonly config: Config;
@@ -73,7 +78,7 @@ export class SvgGitRenderer {
       this.repo = graph;
     }
     container.classList.add("svg-git");
-    this.config = config;
+    this.config = { ...CONFIG_DEFAULTS, ...config };
     this.draw = SVG();
     this.draw.addTo(container);
   }

@@ -30,10 +30,11 @@ GraphologyGitSlide.add("graphology-demo-slide", { showHead: true }, git => {
   git.checkout("main").pause();
   git.merge("develop").pause();
   git.commit().pause();
-  git.commit();
+  git.commit({ msg: "fix buil" }).pause();
+  git.commit({ msg: "fix build", amend: true });
 });
 
-GitSvgSlide.add("svg-demo-slide", { showHead: true }, git => {
+function svgDemoRecorder(git: GitRecorder) {
   git.commit().checkout("develop", { createBranch: true }).commit();
   git.singleStepMode = false;
   git.commit();
@@ -48,31 +49,16 @@ GitSvgSlide.add("svg-demo-slide", { showHead: true }, git => {
   git.tag("origin/develop").pause();
   git.checkout("main").pause();
   git.merge("develop").pause();
-  git.commit().pause();
-  git.commit();
-});
+  git.commit({ msg: "fix buil" }).pause();
+  git.commit({ msg: "fix build", amend: true });
+}
+
+GitSvgSlide.add("svg-demo-slide", { showHead: true }, svgDemoRecorder);
 
 GitSvgSlide.add(
   "svg-horizontal-demo-slide",
   { showHead: true, horizonal: true },
-  git => {
-    git.commit().checkout("develop", { createBranch: true }).commit();
-    git.singleStepMode = false;
-    git.commit();
-    // added below
-    git
-      .commit()
-      .checkout("deploy", { createBranch: true })
-      .commit({ msg: "deploy to dev" });
-    git.checkout("develop");
-    // added above
-    git.commit().pause();
-    git.tag("origin/develop").pause();
-    git.checkout("main").pause();
-    git.merge("develop").pause();
-    git.commit().pause();
-    git.commit();
-  },
+  svgDemoRecorder,
 );
 
 addSlide("committing-slide", git => {

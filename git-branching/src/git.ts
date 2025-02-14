@@ -132,7 +132,16 @@ export class Repo {
     sorted.forEach(dfs);
   }
 
-  commit(msg: string) {
+  commit(msg: string, { amend = false } = {}) {
+    if (amend) {
+      if (this._head.parents.length == 0) {
+        throw Error("Cannot ammend the first commit");
+      }
+      if (this._head.parents.length > 1) {
+        throw Error("Cannot ammend a merge commit");
+      }
+      this._head = this._head.parents[0] as InternalCommit;
+    }
     const prevHead = this._head;
     const c = this._commit(msg);
     c.addParent(prevHead);

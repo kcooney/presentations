@@ -28,11 +28,15 @@ export class GitRecorder {
     this.paused = true;
   }
 
-  commit({ msg = "", reverse = false } = {}) {
+  commit({ msg = "", reverse = false, amend = false } = {}) {
+    if (reverse && amend) {
+      throw Error("Cannot pass both reverse=true and amend=true");
+    }
     this.enqueue(
       new CommitOperation({
         msg: msg,
         reverse: reverse,
+        amend: amend,
         printCommand: this.printCommands,
       }),
     );
@@ -145,24 +149,31 @@ export abstract class GitOperation {
 export class CommitOperation extends GitOperation {
   public readonly msg: string;
   public readonly reverse: boolean;
+  public readonly amend: boolean;
 
   constructor({
     msg,
-    reverse = false,
-    printCommand = true,
+    reverse,
+    amend,
+    printCommand,
   }: {
     msg: string;
     reverse: boolean;
+    amend: boolean;
     printCommand: boolean;
   }) {
-    const cmd = msg ? "git commit -m '" + msg + "'" : "git commit";
+    let cmd = amend ? "git commit --amend" : "git commit";
+    if (msg) {
+      cmd += ` -m '${msg}'`;
+    }
     super({ printCommand: printCommand, command: cmd });
     this.reverse = reverse;
+    this.amend = amend;
     this.msg = msg;
   }
 
   protected doExecute(repo: Repo) {
-    repo.commit(this.msg);
+    repo.commit(this.msg, { amend: this.amend });
   }
 
   override visit(visitor: GitOperationVisitor) {
