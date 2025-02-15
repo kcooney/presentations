@@ -76,7 +76,7 @@ export class Repo {
   private readonly _commits: InternalCommit[];
   private readonly commitMap = new Map<string, InternalCommit>();
   private readonly rand: random.Random;
-  private readonly branches = new Map<string, InternalCommit>();
+  private readonly _branches = new Map<string, InternalCommit>();
   private readonly _tags = new Map<string, InternalCommit>();
   private curBranch: string; // An empty string for "detached head"
 
@@ -101,6 +101,10 @@ export class Repo {
 
   get tags(): ReadonlyMap<string, Commit> {
     return this._tags;
+  }
+
+  get branches(): ReadonlyMap<string, Commit> {
+    return this._branches;
   }
 
   getCommit(sha1: string): Commit | undefined {
@@ -169,7 +173,7 @@ export class Repo {
     const c = new InternalCommit(msg, this.rand.nextHex(), t);
     this._commits.push(c);
     this.commitMap.set(c.sha1, c);
-    this.branches.set(this.curBranch, c);
+    this._branches.set(this.curBranch, c);
     this._head = c;
     return c;
   }
@@ -179,10 +183,10 @@ export class Repo {
     if (!name) {
       throw Error("Branch names cannot be emtpy");
     }
-    if (this.branches.has(name)) {
+    if (this._branches.has(name)) {
       throw Error("Already a branch with name '" + name + "'");
     }
-    this.branches.set(name, this._head);
+    this._branches.set(name, this._head);
   }
 
   /** Merges the given ref to the current branch. */
@@ -190,7 +194,7 @@ export class Repo {
     if (!ref) {
       throw Error('Merge "" - not something we can merge');
     }
-    let commit = this.branches.get(ref);
+    let commit = this._branches.get(ref);
     if (!commit) {
       commit = this.commitMap.get(ref);
       if (!commit) {
@@ -206,7 +210,7 @@ export class Repo {
     if (!ref) {
       throw Error("Empty string is not a valid pathspec");
     }
-    let newHead = this.branches.get(ref);
+    let newHead = this._branches.get(ref);
     if (!newHead) {
       newHead = this.commitMap.get(ref);
       if (!newHead) {

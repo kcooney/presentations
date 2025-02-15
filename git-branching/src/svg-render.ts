@@ -125,7 +125,6 @@ class Rendering {
 class State {
   private _rendering: Rendering | null = null;
   readonly drawnCommits = new Map<string, DrawnCommit>();
-  head: Commit | null = null;
 
   constructor(
     private readonly config: Config,
@@ -195,6 +194,8 @@ export class SvgGitRenderer {
       return;
     }
     const rendering = this.state.prerender(this.draw);
+
+    // Draw circles for all new commits, and lines to their parent commit(s).
     for (const commit of this.state.repo.commits) {
       if (!this.state.drawnCommits.has(commit.sha1)) {
         const coordinates = rendering.getCoordinates(commit);
@@ -241,38 +242,50 @@ export class SvgGitRenderer {
         }
       }
     }
-    for (const commit of this.state.repo.tags.values()) {
-      this.updateLabels(commit);
-    }
-    if (!!this.state.head && this.state.head !== this.state.repo.head) {
-      if (this.state.head.tags.length == 0) {
-        // i.e. if we didn't update it above
-        this.updateLabels(this.state.head);
+
+    // Update tags, branches and HEAD.
+    const branchTips = new Map<Commit, string[]>();
+    this.state.repo.branches.forEach((commit, branch) => {
+      const branches = branchTips.get(commit);
+      if (branches === undefined) {
+        branchTips.set(commit, [branch]);
+      } else {
+        branches.push(branch);
       }
-    }
-    const newHead = this.state.repo.head;
-    this.state.head = newHead;
-    if (this.config.showHead) {
-      this.updateLabels(newHead, { addHead: true });
+    });
+
+    const head = this.config.showHead ? this.state.repo.head : null;
+    for (const commit of this.state.repo.commits) {
+      const commitShape = this.state.drawnCommits.get(commit.sha1);
+      if (commitShape) {
+        this.updateLabel(commit, commitShape, head, branchTips);
+      }
     }
   }
 
-  private updateLabels(commit: Commit, { addHead = false } = {}) {
-    if (!this.state) {
-      return;
-    }
-    const commitShape = this.state.drawnCommits.get(commit.sha1);
-    if (!commitShape) {
-      throw Error(`Commit is not rendered: ${commit.sha1} ${commit.msg}`);
-    }
+  private updateLabel(
+    commit: Commit,
+    commitShape: DrawnCommit,
+    head: Commit | null,
+    branchTips: Map<Commit, string[]>,
+  ) {
     let labels: string[] = [];
     if (!this.config.horizontal) {
       labels.concat(commit.tags);
     }
-    if (addHead) {
+    if (this.config.horizontal) {
+      const branches = branchTips.get(commit);
+      if (branches) {
+        labels = labels.concat(branches);
+      }
+    }
+    if (commit == head) {
       labels = labels.concat(["HEAD"]);
     }
+
     if (labels.length) {
+      // For vertical graphs (move the tables down so they are below the commands)
+      // const label = "⬑ " + labels..join(" ⇠ ");
       const label = labels.map(tag => `⇠ ${tag}`).join(" ");
       if (commitShape.label) {
         commitShape.label.text(label);
