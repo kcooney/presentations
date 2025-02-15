@@ -121,46 +121,13 @@ class Rendering {
   }
 }
 
-/** Contains all data that is cleared by SvgGitRenderer.reset(). */
-class State {
-  private _rendering: Rendering | null = null;
-  readonly drawnCommits = new Map<string, DrawnCommit>();
-
-  constructor(
-    private readonly config: Config,
-    readonly repo: Repo,
-    readonly recorder: GitRecorder | null,
-  ) {}
-
-  prerender(draw: Svg): Rendering {
-    if (this._rendering) {
-      return this._rendering;
-    }
-
-    let layout: Layout;
-    if (this.recorder) {
-      layout = this.recorder.createLayout();
-    } else {
-      layout = Layout.create(this.repo);
-    }
-    const rendering = new Rendering(layout, this.config);
-    draw.size(
-      rendering.canvasSize.x +
-        RIGHT_MARGIN +
-        COMMIT_RADIUS +
-        TEXT_INDENT +
-        MAX_TEXT_WIDTH,
-      rendering.canvasSize.y + BOTTOM_MARGIN + COMMIT_RADIUS,
-    );
-    this._rendering = rendering;
-    return rendering;
-  }
-}
-
 export class SvgGitRenderer {
+  private readonly drawnCommits = new Map<string, DrawnCommit>();
+  private rendering: Rendering | null = null;
+  private readonly repo: Repo;
+  private readonly recorder: GitRecorder | null;
   private readonly config: Config;
   private readonly draw: Svg;
-  private state: State | null;
 
   constructor(
     container: HTMLElement,
@@ -168,9 +135,11 @@ export class SvgGitRenderer {
     config: Config = {},
   ) {
     if (graph instanceof GitRecorder) {
-      this.state = new State(config, graph.repo, graph);
+      this.repo = graph.repo;
+      this.recorder = graph;
     } else {
-      this.state = new State(config, graph, null);
+      this.repo = graph;
+      this.recorder = null;
     }
     container.classList.add("svg-git");
     this.config = { ...CONFIG_DEFAULTS, ...config };
@@ -178,26 +147,17 @@ export class SvgGitRenderer {
     this.draw.addTo(container);
   }
 
-  reset(graph: Repo | GitRecorder | null) {
-    if (!graph) {
-      this.state = null;
-    } else if (graph instanceof GitRecorder) {
-      this.state = new State(this.config, graph.repo, graph);
-    } else {
-      this.state = new State(this.config, graph, null);
-    }
+  kill() {
     this.draw.node.textContent = "";
+    this.draw.node.remove();
   }
 
   render() {
-    if (!this.state) {
-      return;
-    }
-    const rendering = this.state.prerender(this.draw);
+    const rendering = this.prerender();
 
     // Draw circles for all new commits, and lines to their parent commit(s).
-    for (const commit of this.state.repo.commits) {
-      if (!this.state.drawnCommits.has(commit.sha1)) {
+    for (const commit of this.repo.commits) {
+      if (!this.drawnCommits.has(commit.sha1)) {
         const coordinates = rendering.getCoordinates(commit);
         if (!coordinates) {
           console.log("Could not find position for '%s'", commit.sha1);
@@ -206,7 +166,7 @@ export class SvgGitRenderer {
           const circle = this.draw.circle(COMMIT_RADIUS * 2);
           circle.node.classList.add("commit");
           circle.center(coordinates.x, coordinates.y).fill(coordinates.color);
-          this.state.drawnCommits.set(commit.sha1, new DrawnCommit(circle));
+          this.drawnCommits.set(commit.sha1, new DrawnCommit(circle));
 
           const msg = commit.msg ? `${commit.sha1} ${commit.msg}` : commit.sha1;
           if (this.config.horizontal) {
@@ -230,7 +190,7 @@ export class SvgGitRenderer {
               const path = SvgGitRenderer.path(parentCoordinates, coordinates);
               path.stroke({ width: LINE_WIDTH, color: lineColor }).fill();
 
-              const parentCommitShape = this.state!.drawnCommits.get(
+              const parentCommitShape = this!.drawnCommits.get(
                 parentCommit.sha1,
               );
               if (parentCommitShape) {
@@ -245,7 +205,7 @@ export class SvgGitRenderer {
 
     // Update tags, branches and HEAD.
     const branchTips = new Map<Commit, string[]>();
-    this.state.repo.branches.forEach((commit, branch) => {
+    this.repo.branches.forEach((commit, branch) => {
       const branches = branchTips.get(commit);
       if (branches === undefined) {
         branchTips.set(commit, [branch]);
@@ -254,9 +214,9 @@ export class SvgGitRenderer {
       }
     });
 
-    const head = this.config.showHead ? this.state.repo.head : null;
-    for (const commit of this.state.repo.commits) {
-      const commitShape = this.state.drawnCommits.get(commit.sha1);
+    const head = this.config.showHead ? this.repo.head : null;
+    for (const commit of this.repo.commits) {
+      const commitShape = this.drawnCommits.get(commit.sha1);
       if (commitShape) {
         this.updateLabel(commit, commitShape, head, branchTips);
       }
@@ -304,6 +264,30 @@ export class SvgGitRenderer {
         commitShape.label = null;
       }
     }
+  }
+
+  prerender(): Rendering {
+    if (this.rendering) {
+      return this.rendering;
+    }
+
+    let layout: Layout;
+    if (this.recorder) {
+      layout = this.recorder.createLayout();
+    } else {
+      layout = Layout.create(this.repo);
+    }
+    const rendering = new Rendering(layout, this.config);
+    this.draw.size(
+      rendering.canvasSize.x +
+        RIGHT_MARGIN +
+        COMMIT_RADIUS +
+        TEXT_INDENT +
+        MAX_TEXT_WIDTH,
+      rendering.canvasSize.y + BOTTOM_MARGIN + COMMIT_RADIUS,
+    );
+    this.rendering = rendering;
+    return rendering;
   }
 
   private static path(start: Coordinates, end: Coordinates): Shape {

@@ -5,12 +5,12 @@ import { Config, SvgGitRenderer } from "./svg-render.js";
 import { failWith } from "./util.js";
 
 export class GitSvgSlide implements Slide {
+  private readonly config: Config;
   private readonly gitContainer: HTMLElement;
   private readonly svgContainer: HTMLElement;
   private readonly code: HTMLElement;
   private readonly seed: string;
-  private readonly renderer;
-  private git: GitRecorder;
+  private state;
 
   /**
    * Adds a SVG-based slide to the deck.
@@ -24,15 +24,16 @@ export class GitSvgSlide implements Slide {
     recorder: (git: GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
-      return new (class extends GitSvgSlide {
-        protected override record(git: GitRecorder): void {
-          recorder(git);
-        }
-      })(section, config);
+      return new GitSvgSlide(section, config, recorder);
     });
   }
 
-  private constructor(section: HTMLElement, config: Config) {
+  private constructor(
+    section: HTMLElement,
+    config: Config,
+    private readonly recorder: (git: GitRecorder) => void,
+  ) {
+    this.config = config;
     this.seed = section.id;
     this.gitContainer =
       section.querySelector(".git-container") ??
@@ -43,45 +44,75 @@ export class GitSvgSlide implements Slide {
     this.code =
       this.gitContainer.querySelector("code") ??
       failWith(() => `No code inside ${this.gitContainer}`);
-    this.git = new GitRecorder(this.seed);
-    this.renderer = new SvgGitRenderer(this.svgContainer, this.git, config);
+    this.state = new GitSvgSlide.State(this);
   }
 
-  onShowSlide() {
+  onShowSlide(): void {
     this.gitContainer.style.display = "block";
-    this.resetSlide();
+    this.prepareSlide();
     enableMotion(this.onTransition.bind(this));
     this.onTransition(-1);
   }
 
-  onHideSlide() {
+  onHideSlide(): void {
     this.gitContainer.style.display = "none";
-    this.git = new GitRecorder(this.seed);
-    this.renderer.reset(this.git);
+    this.resetSlide();
   }
 
-  protected record(_git: GitRecorder): void {}
+  private resetSlide(): void {
+    this.state.kill();
+    this.state = new GitSvgSlide.State(this);
+  }
 
-  private resetSlide() {
-    this.renderer.reset(this.git);
-    this.git.singleStepMode = true;
-    this.git.checkout("main");
-    this.record(this.git);
+  private prepareSlide(): void {
+    this.state.record();
   }
 
   private onTransition(index: number): boolean {
     if (index === 0) {
-      this.git = new GitRecorder(this.seed);
       this.resetSlide();
+      this.prepareSlide();
+    }
+    this.state.play();
+    return this.state.hasMoreCommands;
+  }
+
+  static readonly State = class {
+    private readonly renderer: SvgGitRenderer;
+    private readonly git: GitRecorder;
+    private _hasMoreCommands = true;
+
+    constructor(private readonly slide: GitSvgSlide) {
+      this.git = new GitRecorder(slide.seed);
+      this.renderer = new SvgGitRenderer(
+        slide.svgContainer,
+        this.git,
+        slide.config,
+      );
     }
 
-    const hasMoreCommands = this.git.replay();
-    this.renderer.render();
+    record(): void {
+      this.git.singleStepMode = true;
+      this.git.checkout("main");
+      this.slide.recorder(this.git);
+    }
 
-    const commands = this.git.operations
-      .map(command => command.command)
-      .filter(command => command !== null);
-    this.code.innerHTML = "$ " + commands.join("<br />$ ");
-    return hasMoreCommands;
-  }
+    play(): void {
+      this._hasMoreCommands = this.git.replay();
+      this.renderer.render();
+
+      const commands = this.git.operations
+        .map(command => command.command)
+        .filter(command => command !== null);
+      this.slide.code.innerHTML = "$ " + commands.join("<br />$ ");
+    }
+
+    get hasMoreCommands(): boolean {
+      return this._hasMoreCommands;
+    }
+
+    kill(): void {
+      this.renderer.kill();
+    }
+  };
 }
