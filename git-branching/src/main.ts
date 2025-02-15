@@ -53,7 +53,11 @@ function svgDemoRecorder(git: GitRecorder) {
   git.commit({ msg: "fix build", amend: true });
 }
 
-GitSvgSlide.add("svg-demo-slide", { showHead: true }, svgDemoRecorder);
+GitSvgSlide.add(
+  "svg-demo-slide",
+  { showHead: true, horizontal: false },
+  svgDemoRecorder,
+);
 
 GitSvgSlide.add(
   "svg-horizontal-demo-slide",

@@ -54,11 +54,23 @@ function getColor(position: Position): string {
 export interface Config {
   readonly showHead?: boolean;
   readonly horizontal?: boolean;
+  readonly showCommitSha1s?: boolean;
+  readonly showCommitMsgs?: boolean;
+  readonly showCommitTags?: boolean;
+  readonly showBranchNames?: boolean;
 }
 
-const CONFIG_DEFAULTS: Config = {
+const HORIZONTAL_CONFIG_DEFAULTS: Config = {
   showHead: false,
-  horizontal: false,
+  showCommitSha1s: false,
+  showCommitMsgs: false,
+  showCommitTags: false,
+};
+const VERTICAL_CONFIG_DEFAULTS: Config = {
+  showHead: false,
+  showCommitSha1s: true,
+  showCommitMsgs: true,
+  showCommitTags: true,
 };
 
 class DrawnCommit {
@@ -142,7 +154,10 @@ export class SvgGitRenderer {
       this.recorder = null;
     }
     container.classList.add("svg-git");
-    this.config = { ...CONFIG_DEFAULTS, ...config };
+    const defaults = config.horizontal
+      ? HORIZONTAL_CONFIG_DEFAULTS
+      : VERTICAL_CONFIG_DEFAULTS;
+    this.config = { ...defaults, ...config };
     this.draw = SVG();
     this.draw.addTo(container);
   }
@@ -168,8 +183,11 @@ export class SvgGitRenderer {
           circle.center(coordinates.x, coordinates.y).fill(coordinates.color);
           this.drawnCommits.set(commit.sha1, new DrawnCommit(circle));
 
-          const msg = commit.msg ? `${commit.sha1} ${commit.msg}` : commit.sha1;
-          if (this.config.horizontal) {
+          const msg =
+            this.config.showCommitMsgs && commit.msg
+              ? `${commit.sha1} ${commit.msg}`
+              : commit.sha1;
+          if (!(this.config.showCommitSha1s || this.config.showCommitMsgs)) {
             circle.element("title").words(msg); // Add hover text
           } else {
             // Show commit sha1 and message to the right of the commit.
@@ -230,10 +248,10 @@ export class SvgGitRenderer {
     branchTips: Map<Commit, string[]>,
   ) {
     let labels: string[] = [];
-    if (!this.config.horizontal) {
+    if (this.config.showCommitTags) {
       labels.concat(commit.tags);
     }
-    if (this.config.horizontal) {
+    if (this.config.showBranchNames) {
       const branches = branchTips.get(commit);
       if (branches) {
         labels = labels.concat(branches);
