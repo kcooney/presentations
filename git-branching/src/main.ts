@@ -55,7 +55,7 @@ function svgDemoRecorder(git: GitRecorder) {
 
 GitSvgSlide.add(
   "svg-demo-slide",
-  { showHead: true, horizontal: false },
+  { showHead: true, horizontal: false, showCommitTags: true },
   svgDemoRecorder,
 );
 
