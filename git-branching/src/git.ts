@@ -14,6 +14,18 @@ export interface Commit {
   mergeChildren(): Commit[];
 }
 
+// See https://www.divotion.com/blog/creating-type-safe-events
+type EventsDefinition = {
+  commitRefsUpdated: Commit;
+  commitCreated: Commit;
+};
+type GitEvents = keyof EventsDefinition;
+type Unsubscribe = () => void;
+
+function isCustomEvent(event: Event): event is CustomEvent {
+  return "detail" in event;
+}
+
 class InternalCommit implements Commit {
   private readonly _parents: InternalCommit[] = [];
   private readonly children: WeakRef<InternalCommit>[] = [];
@@ -78,6 +90,7 @@ export class Repo {
   private readonly rand: random.Random;
   private readonly _branches = new Map<string, InternalCommit>();
   private readonly _tags = new Map<string, InternalCommit>();
+  private eventBus: EventTarget | null = null;
   private curBranch: string; // An empty string for "detached head"
 
   constructor(seed: string) {
@@ -85,6 +98,14 @@ export class Repo {
     this.rand = new random.SplitMix32(random.hash32(seed));
     this.curBranch = "main";
     this._head = this._commit("First commit");
+  }
+
+  onCommitRefsUpdated(handlerFn: (payload: Commit) => void) {
+    this.subscribe("commitRefsUpdated", handlerFn);
+  }
+
+  onCommitCreated(handlerFn: (payload: Commit) => void) {
+    this.subscribe("commitCreated", handlerFn);
   }
 
   get head(): Commit {
@@ -137,6 +158,8 @@ export class Repo {
   }
 
   commit(msg: string, { amend = false } = {}) {
+    const prevHead = this._head;
+    let parent = prevHead;
     if (amend) {
       if (this._head.parents.length == 0) {
         throw Error("Cannot ammend the first commit");
@@ -144,11 +167,12 @@ export class Repo {
       if (this._head.parents.length > 1) {
         throw Error("Cannot ammend a merge commit");
       }
-      this._head = this._head.parents[0] as InternalCommit;
+      parent = this._head.parents[0] as InternalCommit;
     }
-    const prevHead = this._head;
     const c = this._commit(msg);
-    c.addParent(prevHead);
+    c.addParent(parent);
+    this.publish("commitCreated", c);
+    this.publish("commitRefsUpdated", prevHead);
     return c;
   }
 
@@ -162,6 +186,7 @@ export class Repo {
     }
     this._tags.set(name, this._head);
     this._head.addTag(name);
+    this.publish("commitRefsUpdated", this._head);
     return this._head;
   }
 
@@ -187,6 +212,7 @@ export class Repo {
       throw Error("Already a branch with name '" + name + "'");
     }
     this._branches.set(name, this._head);
+    this.publish("commitRefsUpdated", this._head);
   }
 
   /** Merges the given ref to the current branch. */
@@ -203,6 +229,7 @@ export class Repo {
     }
     const c = this.commit("Merge " + ref);
     c.addParent(commit);
+    this.publish("commitCreated", c);
     return c;
   }
 
@@ -218,7 +245,42 @@ export class Repo {
       }
       ref = "";
     }
+    const oldHead = this._head;
     this._head = newHead;
     this.curBranch = ref;
+    this.publish("commitRefsUpdated", oldHead);
+    this.publish("commitRefsUpdated", this._head);
+  }
+
+  private subscribe<T extends GitEvents>(
+    eventName: T,
+    handlerFn: (payload: EventsDefinition[T]) => void,
+  ): Unsubscribe {
+    const eventHandler = (event: Event) => {
+      if (isCustomEvent(event)) {
+        const eventPayload: EventsDefinition[T] = event.detail;
+        handlerFn(eventPayload);
+      }
+    };
+    let eventBus = this.eventBus;
+    if (!eventBus) {
+      eventBus = this.eventBus = new Comment("my-event-bus");
+    }
+    eventBus.addEventListener(eventName, eventHandler);
+    return () => {
+      eventBus.removeEventListener(eventName, eventHandler);
+    };
+  }
+
+  private publish<T extends GitEvents>(
+    eventName: T,
+    payload?: EventsDefinition[T],
+  ): void {
+    if (this.eventBus) {
+      const event = payload
+        ? new CustomEvent(eventName, { detail: payload })
+        : new CustomEvent(eventName);
+      this.eventBus.dispatchEvent(event);
+    }
   }
 }

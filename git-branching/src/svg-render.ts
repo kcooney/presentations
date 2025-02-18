@@ -168,55 +168,67 @@ export class SvgGitRenderer {
   }
 
   render() {
+    if (this.rendering) {
+      return;
+    }
     const rendering = this.prerender();
-
-    // Draw circles for all new commits, and lines to their parent commit(s).
     for (const commit of this.repo.commits) {
-      if (!this.drawnCommits.has(commit.sha1)) {
-        const coordinates = rendering.getCoordinates(commit);
-        if (!coordinates) {
-          console.log("Could not find position for '%s'", commit.sha1);
-        } else {
-          // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
-          const svgCommit = new SvgCommit(
-            this.draw,
-            this.config,
-            coordinates,
-            commit,
-            rendering,
-          );
-          this.drawnCommits.set(commit.sha1, svgCommit);
-          svgCommit.drawCommit();
+      this.commitCreated(commit, rendering);
+    }
+    this.repo.onCommitCreated(commit => this.commitCreated(commit, rendering));
+    this.repo.onCommitRefsUpdated(this.commitRefsUpdated.bind(this));
+  }
 
-          // Color of the line to the first parent commit is the same as this commit.
-          // Color of the line to the other parents are the color of the parent.
-          commit.parents.forEach((parentCommit, index) => {
-            const parentSvgCommit = this.drawnCommits.get(parentCommit.sha1);
-            if (parentSvgCommit) {
-              const lineColor =
-                index == 0 ? coordinates.color : parentSvgCommit.color;
-              svgCommit.drawEdgeToParent(parentSvgCommit, lineColor);
-            }
-          });
-        }
-      }
+  private commitCreated(commit: Commit, rendering: Rendering) {
+    if (this.drawnCommits.has(commit.sha1)) {
+      console.log("Commit created twice for '%s'", commit.sha1);
+      return;
     }
 
-    // Update tags, branches and HEAD.
-    const branchTips = new Map<Commit, string[]>();
-    this.repo.branches.forEach((commit, branch) => {
-      const branches = branchTips.get(commit);
-      if (branches === undefined) {
-        branchTips.set(commit, [branch]);
-      } else {
+    const coordinates = rendering.getCoordinates(commit);
+    if (!coordinates) {
+      console.log("Could not find position for '%s'", commit.sha1);
+    } else {
+      // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
+      const svgCommit = new SvgCommit(
+        this.draw,
+        this.config,
+        coordinates,
+        commit,
+        rendering,
+      );
+      this.drawnCommits.set(commit.sha1, svgCommit);
+      svgCommit.drawCommit();
+
+      // Color of the line to the first parent commit is the same as this commit.
+      // Color of the line to the other parents are the color of the parent.
+      commit.parents.forEach((parentCommit, index) => {
+        const parentSvgCommit = this.drawnCommits.get(parentCommit.sha1);
+        if (parentSvgCommit) {
+          const lineColor =
+            index == 0 ? coordinates.color : parentSvgCommit.color;
+          svgCommit.drawEdgeToParent(parentSvgCommit, lineColor);
+        }
+      });
+    }
+    this.commitRefsUpdated(commit);
+  }
+
+  private commitRefsUpdated(commit: Commit) {
+    const svgCommit = this.drawnCommits.get(commit.sha1);
+    if (!svgCommit) {
+      console.log("Could not find SvgCommit for '%s'", commit.sha1);
+      return;
+    }
+
+    const branches: string[] = [];
+    for (const [branch, tip] of this.repo.branches) {
+      if (tip === commit) {
         branches.push(branch);
       }
-    });
-
-    const head = this.config.showHead ? this.repo.head : null;
-    for (const svgCommit of this.drawnCommits.values()) {
-      svgCommit.drawRefs(head, branchTips);
     }
+    const head = this.config.showHead ? this.repo.head : null;
+    svgCommit.drawRefs(head, branches);
   }
 
   prerender(): Rendering {
@@ -268,7 +280,8 @@ class SvgCommit {
     this.textAnchorX = rendering.textAnchorX;
     this.coordinates = coordinates;
     this.color = coordinates.color;
-    this.needDescriptionNode = config.showCommitSha1s || config.showCommitMsgs || false;
+    this.needDescriptionNode =
+      config.showCommitSha1s || config.showCommitMsgs || false;
   }
 
   drawCommit(): void {
@@ -294,18 +307,15 @@ class SvgCommit {
     }
   }
 
-  drawRefs(head: Commit | null, branchTips: Map<Commit, string[]>) {
+  drawRefs(head: Commit | null, branches: string[]) {
     let labels: string[] = [];
     if (this.config.showCommitTags && !this.needDescriptionNode) {
       labels.concat(this.commit.tags);
     }
     if (this.config.showBranchNames) {
-      const branches = branchTips.get(this.commit);
-      if (branches) {
-        labels = labels.concat(branches);
-      }
+      labels = labels.concat(branches);
     }
-    if (this.commit == head) {
+    if (this.commit === head) {
       labels = labels.concat(["HEAD"]);
     }
 
