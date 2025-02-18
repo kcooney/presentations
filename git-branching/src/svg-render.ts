@@ -65,7 +65,7 @@ const HORIZONTAL_CONFIG_DEFAULTS: Config = {
   showCommitSha1s: false,
   showCommitMsgs: false,
   showCommitTags: false,
-  showBranchNames: true,
+  showBranchNames: false,
 };
 const HORIZONTAL_CONFIG_OVERRIDES: Config = {
   showCommitSha1s: false,
@@ -76,6 +76,7 @@ const VERTICAL_CONFIG_DEFAULTS: Config = {
   showCommitSha1s: true,
   showCommitMsgs: true,
   showCommitTags: true,
+  showBranchNames: true,
 };
 
 export interface Coordinates {
@@ -106,13 +107,12 @@ class Rendering {
       this.canvasSize.x + COMMIT_RADIUS + TEXT_INDENT + LABEL_INDENT;
   }
 
-  getCoordinates(commit: Commit): Point | undefined {
-    const position = this.layout.getPosition(commit);
-    if (!position) {
-      return undefined;
-    }
-    const coordinates = Rendering.toCoordinates(position, this.horizontal);
-    return { x: coordinates.x, y: coordinates.y, color: getColor(position) };
+  getPosition(commit: Commit): Position | undefined {
+    return this.layout.getPosition(commit);
+  }
+
+  toCoordinates(position: Position): Coordinates {
+    return Rendering.toCoordinates(position, this.horizontal);
   }
 
   private static toCoordinates(
@@ -185,28 +185,30 @@ export class SvgGitRenderer {
       return;
     }
 
-    const coordinates = rendering.getCoordinates(commit);
-    if (!coordinates) {
+    // const coordinates = rendering.getCoordinates(commit);
+    const position = rendering.getPosition(commit);
+    if (!position) {
       console.log("Could not find position for '%s'", commit.sha1);
     } else {
       // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
+      const coordinates = rendering.toCoordinates(position);
+      const color = getColor(position);
       const svgCommit = new SvgCommit(
         this.draw,
         this.config,
         coordinates,
+        color,
         commit,
         rendering,
       );
       this.drawnCommits.set(commit.sha1, svgCommit);
-      svgCommit.drawCommit();
 
       // Color of the line to the first parent commit is the same as this commit.
       // Color of the line to the other parents are the color of the parent.
       commit.parents.forEach((parentCommit, index) => {
         const parentSvgCommit = this.drawnCommits.get(parentCommit.sha1);
         if (parentSvgCommit) {
-          const lineColor =
-            index == 0 ? coordinates.color : parentSvgCommit.color;
+          const lineColor = index == 0 ? color : parentSvgCommit.color;
           svgCommit.drawEdgeToParent(parentSvgCommit, lineColor);
         }
       });
@@ -257,59 +259,56 @@ export class SvgGitRenderer {
 }
 
 class SvgCommit {
-  public readonly coordinates: Coordinates;
   public readonly color: string;
-  private readonly message: string;
-  private readonly textAnchorX: number;
-  private readonly needDescriptionNode: boolean;
-  private circle: Circle | null = null;
-  private description: Text | null = null;
+  private readonly coordinates: Coordinates;
+  private readonly circle: Circle;
+  private readonly description: Text | null = null;
   private label: Text | null = null;
 
   constructor(
     private readonly draw: Svg,
     private readonly config: Config,
-    coordinates: Point,
+    coordinates: Coordinates,
+    color: string,
     private readonly commit: Commit,
     rendering: Rendering,
   ) {
-    this.message =
+    const message =
       config.showCommitMsgs && commit.msg
         ? `${commit.sha1} ${commit.msg}`
         : commit.sha1;
-    this.textAnchorX = rendering.textAnchorX;
     this.coordinates = coordinates;
-    this.color = coordinates.color;
-    this.needDescriptionNode =
-      config.showCommitSha1s || config.showCommitMsgs || false;
-  }
+    this.color = color;
 
-  drawCommit(): void {
-    if (!this.circle) {
-      const circle = (this.circle = this.draw.circle(COMMIT_RADIUS * 2));
-      circle.node.classList.add("commit");
-      circle.center(this.coordinates.x, this.coordinates.y).fill(this.color);
-      if (!this.needDescriptionNode && this.message) {
-        circle.element("title").words(this.message); // Add hover text
-      }
-    }
+    this.circle = this.draw.circle(COMMIT_RADIUS * 2);
+    this.circle.node.classList.add("commit");
+    this.circle.center(this.coordinates.x, this.coordinates.y).fill(this.color);
 
-    if (!this.description && this.needDescriptionNode) {
-      let msg = this.message;
+    if (config.showCommitSha1s || config.showCommitMsgs) {
+      let msg = message;
       if (this.config.showCommitTags && this.commit.tags.length) {
         msg = " ⇠ " + this.commit.tags.join(" ⇠ ") + msg;
       }
-      const desc = (this.description = this.draw.text(msg).font(COMMIT_FONT));
-      desc.move(
-        this.textAnchorX,
-        this.circle.bbox().cy - desc.bbox().height / 2,
+      this.description = this.draw.text(msg).font(COMMIT_FONT);
+      this.description.move(
+        rendering.textAnchorX,
+        this.circle.bbox().cy - this.description.bbox().height / 2,
       );
+    } else {
+      this.circle.element("title").words(message); // Add hover text
     }
+  }
+
+  drawEdgeToParent(parent: SvgCommit, lineColor: string): void {
+    const parentNode = parent.circle.node;
+    const path = SvgCommit.path(parent.coordinates, this.coordinates);
+    path.stroke({ width: LINE_WIDTH, color: lineColor }).fill();
+    parentNode.parentElement?.insertBefore(path.node, parentNode);
   }
 
   drawRefs(head: Commit | null, branches: string[]) {
     let labels: string[] = [];
-    if (this.config.showCommitTags && !this.needDescriptionNode) {
+    if (this.config.showCommitTags && !this.description) {
       labels.concat(this.commit.tags);
     }
     if (this.config.showBranchNames) {
@@ -330,10 +329,7 @@ class SvgCommit {
   }
 
   private drawLabel(label: string): void {
-    const commitBbox = this.circle?.bbox();
-    if (!commitBbox) {
-      return;
-    }
+    const commitBbox = this.circle.bbox();
     if (this.label) {
       this.label.text(label);
     } else {
@@ -348,16 +344,6 @@ class SvgCommit {
   private removeLabel(): void {
     this.label?.remove();
     this.label = null;
-  }
-
-  drawEdgeToParent(parent: SvgCommit, lineColor: string): void {
-    const parentNode = parent.circle?.node;
-    if (!parentNode) {
-      return;
-    }
-    const path = SvgCommit.path(parent.coordinates, this.coordinates);
-    path.stroke({ width: LINE_WIDTH, color: lineColor }).fill();
-    parentNode.parentElement?.insertBefore(path.node, parentNode);
   }
 
   private static path(start: Coordinates, end: Coordinates): Shape {
