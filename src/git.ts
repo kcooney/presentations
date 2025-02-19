@@ -227,7 +227,9 @@ export class Repo {
         throw Error(`Merge ${ref} - not something we can merge`);
       }
     }
-    const c = this.commit("Merge " + ref);
+    const parent = this._head;
+    const c = this._commit("Merge " + ref);
+    c.addParent(parent);
     c.addParent(commit);
     this.publish("commitCreated", c);
     return c;
