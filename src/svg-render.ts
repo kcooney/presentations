@@ -1,7 +1,7 @@
 import { Circle, Line, Path, Shape, SVG, Svg, Text } from "@svgdotjs/svg.js";
-import { Commit, ReadonlyRepo} from "./git";
+import { Commit, ReadonlyRepo, Repo } from "./git";
 import { Layout, Position } from "./layout.js";
-import { GitRecorder } from "./git-recorder";
+import { GitPlayback } from "./git-recorder";
 
 const LEFT_MARGIN = 2;
 const RIGHT_MARGIN = 2;
@@ -143,21 +143,20 @@ export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SvgCommit>();
   private rendering: Rendering | null = null;
   private readonly repo: ReadonlyRepo;
-  private readonly recorder: GitRecorder | null;
+  private readonly layoutRepo: ReadonlyRepo;
   private readonly config: Config;
   private readonly draw: Svg;
 
   constructor(
     container: HTMLElement,
-    graph: ReadonlyRepo | GitRecorder,
+    graph: Repo | GitPlayback,
     config: Config = {},
   ) {
-    if (graph instanceof GitRecorder) {
-      this.repo = graph.replayRepo;
-      this.recorder = graph;
+    if (graph instanceof GitPlayback) {
+      this.repo = graph.repo;
+      this.layoutRepo = graph.recordRepo;
     } else {
-      this.repo = graph;
-      this.recorder = null;
+      this.layoutRepo = this.repo = graph;
     }
     container.classList.add("svg-git");
     const defaults = config.horizontal
@@ -238,17 +237,12 @@ export class SvgGitRenderer {
     svgCommit.drawRefs(head, branches);
   }
 
-  prerender(): Rendering {
+  private prerender(): Rendering {
     if (this.rendering) {
       return this.rendering;
     }
 
-    let layout: Layout;
-    if (this.recorder) {
-      layout = this.recorder.createLayout();
-    } else {
-      layout = Layout.create(this.repo);
-    }
+    const layout = Layout.create(this.layoutRepo);
     const rendering = new Rendering(layout, this.config);
     this.draw.size(
       rendering.canvasSize.x +

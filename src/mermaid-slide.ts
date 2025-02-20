@@ -102,6 +102,7 @@ export class MermaidGitSlide implements Slide {
   private readonly mermaidElement: HTMLElement;
   private readonly seed: string;
   private git: git.GitRecorder;
+  private playback: git.GitPlayback | undefined;
 
   /**
    * Adds a Mermaid-based slide to the deck.
@@ -160,6 +161,7 @@ export class MermaidGitSlide implements Slide {
     this.git.singleStepMode = true;
     this.git.commit({ msg: "Initial commit message" });
     this.record(this.git);
+    this.playback = this.git.replay();
   }
 
   private onTransition(index: number): boolean {
@@ -167,10 +169,11 @@ export class MermaidGitSlide implements Slide {
       this.git = new git.GitRecorder(this.seed);
       this.resetSlide();
     }
-    const hasMoreOperations = this.git.replay();
+    const playback = this.playback!;
+    const hasMoreOperations = playback.play();
 
-    const visitor = new MermaidGitOperationVisitor(this.git.repo);
-    this.git.operations.forEach(op => op.visit(visitor));
+    const visitor = new MermaidGitOperationVisitor(playback.repo);
+    playback.operations.forEach(op => op.visit(visitor));
 
     const element = this.mermaidElement;
     this.code.innerHTML = "$ " + visitor.commands.join("<br />$ ");

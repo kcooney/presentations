@@ -1,6 +1,6 @@
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import { GitRecorder } from "./git-recorder.js";
+import { GitPlayback, GitRecorder } from "./git-recorder.js";
 import { Config, SvgGitRenderer } from "./svg-render.js";
 import { failWith } from "./util.js";
 
@@ -78,8 +78,9 @@ export class GitSvgSlide implements Slide {
   }
 
   static readonly State = class {
-    private readonly renderer: SvgGitRenderer;
+    private renderer: SvgGitRenderer | null = null;
     private readonly git: GitRecorder;
+    private playback: GitPlayback | null = null;
     private _hasMoreCommands = true;
 
     constructor(private readonly slide: GitSvgSlide) {
@@ -88,11 +89,6 @@ export class GitSvgSlide implements Slide {
         singleStepMode: config.singleStepMode ?? true,
         printCommands: config.printCommands ?? true,
       });
-      this.renderer = new SvgGitRenderer(
-        slide.svgContainer,
-        this.git,
-        slide.config,
-      );
     }
 
     record(): void {
@@ -101,10 +97,19 @@ export class GitSvgSlide implements Slide {
     }
 
     play(): void {
-      this._hasMoreCommands = this.git.replay();
-      this.renderer.render();
+      let playback = this.playback;
+      if (!playback) {
+        playback = this.playback = this.git.replay();
+        this.renderer = new SvgGitRenderer(
+          this.slide.svgContainer,
+          playback,
+          this.slide.config,
+        );
+        this.renderer.render();
+      }
+      this._hasMoreCommands = playback.play();
 
-      const commands = this.git.operations
+      const commands = playback.operations
         .map(command => command.command)
         .filter(command => command !== null);
       this.slide.code.innerHTML = "$ " + commands.join("<br />$ ");
@@ -115,7 +120,7 @@ export class GitSvgSlide implements Slide {
     }
 
     kill(): void {
-      this.renderer.kill();
+      this.renderer?.kill();
     }
   };
 }

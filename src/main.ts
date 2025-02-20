@@ -122,7 +122,7 @@ function gitBranchingDesk() {
 
   GitSvgSlide.add("head-slide", { showHead: true }, git => {
     git.commit({ msg: "Add shooter" });
-    const addShooterCommit = git.repo.head.sha1;
+    const addShooterCommit = git.head.sha1;
     git.commit({ msg: "Shoot faster" });
     git
       .checkout("drive", { createBranch: true })
@@ -134,8 +134,7 @@ function gitBranchingDesk() {
       .commit({ msg: "Add intake" })
       .checkout("drive")
       .pause();
-    git.commit({ msg: "Tune drive" })
-      .pause();
+    git.commit({ msg: "Tune drive" }).pause();
     git.printCommands = true;
     git.singleStepMode = true;
     git

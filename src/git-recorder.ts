@@ -1,5 +1,45 @@
 import { Commit, ReadonlyRepo, Repo } from "./git";
-import { Layout } from "./layout";
+
+export class GitPlayback {
+  private readonly _repo: Repo;
+  private readonly _operations: GitOperation[] = [];
+  // Queue invariant: all nested lists are non-empty.
+  private readonly queue: GitOperation[][] = [];
+
+  constructor(
+    readonly recordRepo: Repo,
+    queue: GitOperation[][],
+  ) {
+    this._repo = new Repo(recordRepo.seed);
+    queue.forEach(chunk => {
+      this.queue.push(chunk.slice());
+    });
+  }
+
+  get repo(): ReadonlyRepo {
+    return this._repo;
+  }
+
+  get operations(): ReadonlyArray<GitOperation> {
+    return this._operations;
+  }
+
+  /** Runs the next set of commands; returns true if there are more commands. */
+  play(visitor: GitOperationVisitor | null = null): boolean {
+    const commands = this.queue.shift();
+    if (!commands) {
+      return false; // run() called without any commands to play!
+    }
+    commands.forEach(command => {
+      command.execute(this._repo);
+      if (visitor) {
+        command.visit(visitor);
+      }
+    });
+    this._operations.push(...commands);
+    return this.queue.length > 0;
+  }
+}
 
 /** Records a series of Git operations to be shown on the slide. */
 export class GitRecorder {
@@ -7,10 +47,7 @@ export class GitRecorder {
   singleStepMode;
 
   printCommands;
-  private readonly _recordRepo: Repo;
-  private readonly _replayRepo: Repo;
-  private _repo: Repo;
-  private readonly _operations: GitOperation[] = [];
+  private readonly _repo: Repo;
   private paused = true;
   // Queue invariant: all nested lists are non-empty.
   private readonly queue: GitOperation[][] = [];
@@ -19,27 +56,13 @@ export class GitRecorder {
     seed: string,
     { singleStepMode = false, printCommands = true } = {},
   ) {
-    this._recordRepo = new Repo(seed);
-    this._replayRepo = new Repo(seed)
-    this._repo = this._recordRepo;
+    this._repo = new Repo(seed);
     this.singleStepMode = singleStepMode;
     this.printCommands = printCommands;
   }
 
-  get recording(): boolean {
-    return this._repo === this._recordRepo;
-  }
-
-  get repo(): ReadonlyRepo {
-    return this._repo;
-  }
-
-  get replayRepo(): ReadonlyRepo {
-    return this._replayRepo;
-  }
-
-  get operations(): ReadonlyArray<GitOperation> {
-    return this._operations;
+  get head(): Commit {
+    return this._repo.head;
   }
 
   pause() {
@@ -89,33 +112,11 @@ export class GitRecorder {
   }
 
   /** Runs the next set of commands; returns true if there are more commands. */
-  replay(visitor: GitOperationVisitor | null = null): boolean {
-    this._repo = this._replayRepo;
-    const commands = this.queue.shift();
-    if (!commands) {
-      return false; // run() called without any commands to play!
-    }
-    commands.forEach(command => {
-      command.execute(this._repo);
-      if (visitor) {
-        command.visit(visitor);
-      }
-    });
-    this._operations.push(...commands);
-    return this.queue.length > 0;
-  }
-
-  createLayout() {
-    if (this.recording) {
-      throw new Error("Cannot call createLayout() in record mode")
-    }
-    return Layout.create(this._recordRepo);
+  replay() {
+    return new GitPlayback(this._repo, this.queue);
   }
 
   private enqueue(command: GitOperation) {
-    if (!this.recording) {
-      throw Error("Cannot record new actions after replay() is called");
-    }
     command.execute(this._repo);
     if (this.paused) {
       this.queue.push([]);

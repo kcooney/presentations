@@ -14,6 +14,7 @@ import {
   GitRecorder,
   GitOperationVisitor,
   TagOperation,
+  GitPlayback,
 } from "./git-recorder.js";
 import { Layout } from "./layout.js";
 import { failWith } from "./util.js";
@@ -37,6 +38,7 @@ export class GraphologyGitSlide implements Slide {
   private readonly seed: string;
   private readonly showHead: boolean;
   private layout: Layout | undefined;
+  private playback: GitPlayback | undefined;
   private sigmaInstance: Sigma | undefined;
   private git: GitRecorder;
 
@@ -99,7 +101,8 @@ export class GraphologyGitSlide implements Slide {
     this.git.singleStepMode = true;
     this.git.checkout("main");
     this.record(this.git);
-    this.layout = this.git.createLayout();
+    this.playback = this.git.replay();
+    this.layout = Layout.create(this.playback.recordRepo);
 
     this.sigmaInstance = new Sigma(this.graph, this.sigmaContainer, {
       autoCenter: false,
@@ -128,13 +131,12 @@ export class GraphologyGitSlide implements Slide {
   private onTransition(index: number): boolean {
     if (index === 0) {
       this.git = new GitRecorder(this.seed);
-      this.layout = undefined;
       this.resetSlide();
     }
-
-    const prevHead = this.git.repo.head;
+    const playback = this.playback!;
+    const prevHead = playback.repo.head;
     const updateLabels = this.updateLabels.bind(this);
-    const hasMoreCommands = this.git.replay(
+    const hasMoreCommands = playback.play(
       new (class extends GitOperationVisitor {
         override visitTag(op: TagOperation): void {
           updateLabels(op.taggedCommit);
@@ -143,7 +145,7 @@ export class GraphologyGitSlide implements Slide {
     );
 
     const layout = this.layout!;
-    for (const commit of this.git.repo.commits) {
+    for (const commit of playback.repo.commits) {
       if (!this.graph.hasNode(commit.sha1)) {
         const position = layout.getPosition(commit);
         if (!position) {
@@ -174,14 +176,14 @@ export class GraphologyGitSlide implements Slide {
         }
       }
     }
-    if (prevHead !== this.git.repo.head) {
+    if (prevHead !== playback.repo.head) {
       this.updateLabels(prevHead);
     }
     if (this.showHead) {
-      this.updateLabels(this.git.repo.head, { addHead: true });
+      this.updateLabels(playback.repo.head, { addHead: true });
     }
 
-    const commands = this.git.operations
+    const commands = playback.operations
       .map(command => command.command)
       .filter(command => command !== null);
     this.code.innerHTML = "$ " + commands.join("<br />$ ");

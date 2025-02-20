@@ -105,7 +105,7 @@ export class Repo implements ReadonlyRepo {
   private eventBus: EventTarget | null = null;
   private curBranch: string; // An empty string for "detached head"
 
-  constructor(seed: string) {
+  constructor(public readonly seed: string) {
     this._commits = [];
     this.rand = new random.SplitMix32(random.hash32(seed));
     this.curBranch = "main";
