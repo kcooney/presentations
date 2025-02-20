@@ -1,4 +1,4 @@
-import { Commit, Repo } from "./git";
+import { Commit, ReadonlyRepo, Repo } from "./git";
 import { Layout } from "./layout";
 
 /** Records a series of Git operations to be shown on the slide. */
@@ -7,22 +7,35 @@ export class GitRecorder {
   singleStepMode;
 
   printCommands;
-  readonly repo: Repo;
-  readonly _operations: GitOperation[] = [];
+  private readonly _recordRepo: Repo;
+  private readonly _replayRepo: Repo;
+  private _repo: Repo;
+  private readonly _operations: GitOperation[] = [];
   private paused = true;
   // Queue invariant: all nested lists are non-empty.
   private readonly queue: GitOperation[][] = [];
-  private readonly recordRepo: Repo;
-  private recording = true;
 
   constructor(
     seed: string,
     { singleStepMode = false, printCommands = true } = {},
   ) {
-    this.repo = new Repo(seed);
-    this.recordRepo = new Repo(seed);
+    this._recordRepo = new Repo(seed);
+    this._replayRepo = new Repo(seed)
+    this._repo = this._recordRepo;
     this.singleStepMode = singleStepMode;
     this.printCommands = printCommands;
+  }
+
+  get recording(): boolean {
+    return this._repo === this._recordRepo;
+  }
+
+  get repo(): ReadonlyRepo {
+    return this._repo;
+  }
+
+  get replayRepo(): ReadonlyRepo {
+    return this._replayRepo;
   }
 
   get operations(): ReadonlyArray<GitOperation> {
@@ -77,13 +90,13 @@ export class GitRecorder {
 
   /** Runs the next set of commands; returns true if there are more commands. */
   replay(visitor: GitOperationVisitor | null = null): boolean {
-    this.recording = false;
+    this._repo = this._replayRepo;
     const commands = this.queue.shift();
     if (!commands) {
       return false; // run() called without any commands to play!
     }
     commands.forEach(command => {
-      command.execute(this.repo);
+      command.execute(this._repo);
       if (visitor) {
         command.visit(visitor);
       }
@@ -93,14 +106,17 @@ export class GitRecorder {
   }
 
   createLayout() {
-    return Layout.create(this.recordRepo);
+    if (this.recording) {
+      throw new Error("Cannot call createLayout() in record mode")
+    }
+    return Layout.create(this._recordRepo);
   }
 
   private enqueue(command: GitOperation) {
     if (!this.recording) {
       throw Error("Cannot record new actions after replay() is called");
     }
-    command.execute(this.recordRepo);
+    command.execute(this._repo);
     if (this.paused) {
       this.queue.push([]);
       this.paused = false;
