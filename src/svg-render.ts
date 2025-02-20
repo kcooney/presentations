@@ -1,5 +1,5 @@
 import { Circle, Line, Path, Shape, SVG, Svg, Text } from "@svgdotjs/svg.js";
-import { Commit, Repo } from "./git";
+import { Commit, ReadonlyRepo} from "./git";
 import { Layout, Position } from "./layout.js";
 import { GitRecorder } from "./git-recorder";
 
@@ -142,18 +142,18 @@ class Rendering {
 export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SvgCommit>();
   private rendering: Rendering | null = null;
-  private readonly repo: Repo;
+  private readonly repo: ReadonlyRepo;
   private readonly recorder: GitRecorder | null;
   private readonly config: Config;
   private readonly draw: Svg;
 
   constructor(
     container: HTMLElement,
-    graph: Repo | GitRecorder,
+    graph: ReadonlyRepo | GitRecorder,
     config: Config = {},
   ) {
     if (graph instanceof GitRecorder) {
-      this.repo = graph.repo;
+      this.repo = graph.replayRepo;
       this.recorder = graph;
     } else {
       this.repo = graph;

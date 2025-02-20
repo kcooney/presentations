@@ -1,7 +1,7 @@
 import mermaid from "mermaid";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import { Commit, Repo } from "./git.js";
+import { Commit, ReadonlyRepo } from "./git.js";
 import * as git from "./git-recorder.js";
 import { failWith } from "./util.js";
 
@@ -37,7 +37,7 @@ class MermaidGitOperationVisitor extends git.GitOperationVisitor {
   head: Commit;
   readonly taggableActions = new Map<string, TaggableAction>();
 
-  constructor(repo: Repo) {
+  constructor(repo: ReadonlyRepo) {
     super();
     this.head = repo.head;
   }

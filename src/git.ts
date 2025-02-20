@@ -82,8 +82,20 @@ class InternalCommit implements Commit {
   }
 }
 
+export interface ReadonlyRepo {
+  get head(): Commit;
+  get currentBranch(): string | undefined;
+  get commits(): ReadonlyArray<Commit>;
+  get tags(): ReadonlyMap<string, Commit>;
+  get branches(): ReadonlyMap<string, Commit>;
+  getCommit(sha1: string): Commit | undefined;
+  temporalTopologicalWalk(callback: (commit: Commit) => void): void;
+  onCommitRefsUpdated(handlerFn: (payload: Commit) => void): void;
+  onCommitCreated(handlerFn: (payload: Commit) => void): void;
+}
+
 /** Simulates a git repository. */
-export class Repo {
+export class Repo implements ReadonlyRepo {
   private _head: InternalCommit;
   private readonly _commits: InternalCommit[];
   private readonly commitMap = new Map<string, InternalCommit>();
