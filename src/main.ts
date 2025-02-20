@@ -6,8 +6,8 @@ import { MermaidGitSlide } from "./mermaid-slide.js";
 import { GitSvgSlide } from "./svg-slide.js";
 
 function simpleDesk() {
-  Reveal.initialize( {
-    plugins: [ Markdown /*, RevealMenu*/ ],
+  Reveal.initialize({
+    plugins: [Markdown /*, RevealMenu*/],
     width: 1160,
     center: false,
     keyboard: true,
@@ -19,14 +19,6 @@ function simpleDesk() {
 }
 
 function gitBranchingDesk() {
-
-  function addSlide(
-    sectionId: string,
-    recorder: (git: GitRecorder) => void,
-  ): void {
-    MermaidGitSlide.add(sectionId, recorder);
-  }
-
   MermaidGitSlide.add("mermaid-demo-slide", git => {
     git.commit().checkout("develop", { createBranch: true }).commit();
     git.singleStepMode = false;
@@ -70,7 +62,7 @@ function gitBranchingDesk() {
 
   GitSvgSlide.add(
     "svg-demo-slide",
-    { showHead: true, horizontal: false, showCommitTags: true },
+    { showHead: true, showCommitTags: true },
     svgDemoRecorder,
   );
 
@@ -80,57 +72,82 @@ function gitBranchingDesk() {
     svgDemoRecorder,
   );
 
-  addSlide("committing-slide", git => {
-    git.commit({ msg: "Add shooter" }).commit({ msg: "Shoot faster" });
-    git.commit({ msg: "Revert shoot faster", reverse: true });
-    git.commit({ msg: "Use gyro" });
-  });
+  GitSvgSlide.add(
+    "committing-slide",
+    { showHead: false, showBranchNames: false },
+    git => {
+      git.commit({ msg: "Add shooter" }).commit({ msg: "Shoot faster" });
+    },
+  );
 
-  addSlide("branches-slide", git => {
+  GitSvgSlide.add(
+    "reverting-and-amending-slide",
+    {
+      showHead: false,
+      showBranchNames: false,
+      singleStepMode: false,
+      printCommands: false,
+    },
+    git => {
+      git.singleStepMode = true;
+      git.commit({ msg: "Add shooter" });
+      git.printCommands = true;
+      git.commit({ msg: "Shoot faster" });
+      git.commit({ reverse: true });
+      git.commit({ msg: "Use giro" });
+      git.commit({ msg: "Use gyro", amend: true });
+    },
+  );
+
+  GitSvgSlide.add("branches-slide", { showBranchNames: true }, git => {
     git.commit({ msg: "Add shooter" }).commit({ msg: "Shoot faster" });
     git
       .checkout("chicken/on-the-bus", { createBranch: true })
       .commit({ msg: "Add drive subsystem" });
-
-    git.singleStepMode = false;
-    git.printCommands = false;
-    git.checkout("main").commit({ msg: "Add intake" });
-    git.checkout("chicken/on-the-bus").pause();
-    git.printCommands = true;
     git
       .commit({ msg: "Let me drive the bus!" })
-      .commit({ msg: "Fix shooter angle" })
-      .pause();
+      .commit({ msg: "Fix shooter angle" });
+
+    // Simulate someone else commiting on 'main'
+    git.singleStepMode = false;
+    git.printCommands = false;
+    git.checkout("main").commit({ msg: "Add climb" });
   });
 
-  addSlide("tagging-slide", git => {
+  GitSvgSlide.add("tagging-slide", { showCommitTags: true }, git => {
     git.commit({ msg: "Add shooter" });
     git.tag("v1.0");
     git.commit({ msg: "Shoot faster" });
   });
 
-  addSlide("head-slide", git => {
+  GitSvgSlide.add("head-slide", { showHead: true }, git => {
     git.commit({ msg: "Add shooter" });
     const addShooterCommit = git.repo.head.sha1;
     git.commit({ msg: "Shoot faster" });
-    git.singleStepMode = false;
     git
-      .checkout("chicken/on-the-bus", { createBranch: true })
-      .commit({ msg: "Add drive subsystem" })
-      .pause();
+      .checkout("drive", { createBranch: true })
+      .commit({ msg: "Drive subsystem" });
+    git.singleStepMode = false;
     git.printCommands = false;
     git
       .checkout("main")
       .commit({ msg: "Add intake" })
-      .checkout("chicken/on-the-bus")
+      .checkout("drive")
+      .pause();
+    git.commit({ msg: "Tune drive" })
       .pause();
     git.printCommands = true;
     git.singleStepMode = true;
     git
       .checkout(addShooterCommit)
-      .checkout("monkey/bug-fix", { createBranch: true })
+      .checkout("bug-fix", { createBranch: true })
       .commit({ msg: "Fix shooter angle" });
     git.commit({ msg: "One more fix" });
+    git.printCommands = false;
+    git.singleStepMode = false;
+    git.checkout("drive").commit({ msg: "re-tune drive" });
+    git.checkout("main").commit({ msg: "lights" });
+    git.checkout("bug-fix");
   });
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -146,19 +163,19 @@ function gitBranchingDesk() {
   });
 }
 
-const deck = document.querySelector(".reveal")
+const deck = document.querySelector(".reveal");
 if (deck) {
   switch (deck.id) {
-    case 'git-branching':
+    case "git-branching":
       gitBranchingDesk();
       break;
-    case 'simple':
+    case "simple":
       simpleDesk();
       break;
     default:
-      console.log(`Unknown desk: id="${deck.id}"`)
-      Reveal.initialize( {
-        plugins: [ Markdown ],
+      console.log(`Unknown desk: id="${deck.id}"`);
+      Reveal.initialize({
+        plugins: [Markdown],
         width: 1160,
         center: false,
         keyboard: true,

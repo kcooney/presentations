@@ -13,7 +13,7 @@ const SPACE_BETWEEN_BRANCHES = 50;
 const LINE_WIDTH = 8;
 const COMMIT_RADIUS = 11;
 const LABEL_INDENT = 8;
-const TEXT_INDENT = 88;
+const TEXT_INDENT = 188;
 const MAX_TEXT_WIDTH = 500;
 
 type Font = {
@@ -52,13 +52,20 @@ function getColor(position: Position): string {
 }
 
 export interface Config {
-  readonly showHead?: boolean;
-  readonly horizontal?: boolean;
-  readonly showCommitSha1s?: boolean;
-  readonly showCommitMsgs?: boolean;
-  readonly showCommitTags?: boolean;
-  readonly showBranchNames?: boolean;
+  readonly singleStepMode?: boolean; // defaults to true
+  readonly printCommands?: boolean; // defaults to true
+  readonly showHead?: boolean; // defaults to false
+  readonly horizontal?: boolean; // defaults to false
+  readonly showCommitSha1s?: boolean; // defaults to false
+  readonly showCommitMsgs?: boolean; // defaults to false
+  readonly showCommitTags?: boolean; // defaults to false
+  readonly showBranchNames?: boolean; // defaults to false
 }
+
+const DEFAULTS: Config = {
+  singleStepMode: true,
+  printCommands: true,
+};
 
 const HORIZONTAL_CONFIG_DEFAULTS: Config = {
   showHead: false,
@@ -157,7 +164,7 @@ export class SvgGitRenderer {
       ? HORIZONTAL_CONFIG_DEFAULTS
       : VERTICAL_CONFIG_DEFAULTS;
     const overrides = config.horizontal ? HORIZONTAL_CONFIG_OVERRIDES : {};
-    this.config = { ...defaults, ...config, ...overrides };
+    this.config = { ...DEFAULTS, ...defaults, ...config, ...overrides };
     this.draw = SVG();
     this.draw.addTo(container);
   }
@@ -185,12 +192,10 @@ export class SvgGitRenderer {
       return;
     }
 
-    // const coordinates = rendering.getCoordinates(commit);
     const position = rendering.getPosition(commit);
     if (!position) {
       console.log("Could not find position for '%s'", commit.sha1);
     } else {
-      // const label = commit.tags.map(tag => `⇠ ${tag}`).join(" ");
       const coordinates = rendering.toCoordinates(position);
       const color = getColor(position);
       const svgCommit = new SvgCommit(
@@ -263,6 +268,7 @@ class SvgCommit {
   private readonly coordinates: Coordinates;
   private readonly circle: Circle;
   private readonly description: Text | null = null;
+  private readonly message;
   private label: Text | null = null;
 
   constructor(
@@ -273,7 +279,7 @@ class SvgCommit {
     private readonly commit: Commit,
     rendering: Rendering,
   ) {
-    const message =
+    this.message =
       config.showCommitMsgs && commit.msg
         ? `${commit.sha1} ${commit.msg}`
         : commit.sha1;
@@ -285,7 +291,7 @@ class SvgCommit {
     this.circle.center(this.coordinates.x, this.coordinates.y).fill(this.color);
 
     if (config.showCommitSha1s || config.showCommitMsgs) {
-      let msg = message;
+      let msg = this.message;
       if (this.config.showCommitTags && this.commit.tags.length) {
         msg = " ⇠ " + this.commit.tags.join(" ⇠ ") + msg;
       }
@@ -295,7 +301,7 @@ class SvgCommit {
         this.circle.bbox().cy - this.description.bbox().height / 2,
       );
     } else {
-      this.circle.element("title").words(message); // Add hover text
+      this.circle.element("title").words(this.message); // Add hover text
     }
   }
 
@@ -308,8 +314,13 @@ class SvgCommit {
 
   drawRefs(head: Commit | null, branches: string[]) {
     let labels: string[] = [];
-    if (this.config.showCommitTags && !this.description) {
-      labels.concat(this.commit.tags);
+    if (this.config.showCommitTags && this.commit.tags.length) {
+      if (this.description) {
+        const msg = this.message + " ⇠ " + this.commit.tags.join(" ⇠ ");
+        this.description.text(msg);
+      } else {
+        labels.concat(this.commit.tags);
+      }
     }
     if (this.config.showBranchNames) {
       labels = labels.concat(branches);
@@ -349,6 +360,11 @@ class SvgCommit {
   private static path(start: Coordinates, end: Coordinates): Shape {
     if (start.x === end.x) {
       return new Line({ x1: start.x, y1: start.y, x2: end.x, y2: end.y });
+    }
+    if (end.x > start.x && end.y > start.y) {
+      return new Path({
+        d: `M${start.x},${start.y} C${end.x},${start.y} ${end.x},${start.y} ${end.x},${end.y}`,
+      }).fill("none");
     }
     return new Path({
       d: `M${start.x},${start.y} C${start.x},${end.y} ${end.x},${start.y} ${end.x},${end.y}`,

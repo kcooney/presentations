@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Branching in Git</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" href="favicon.ico" />
     <!-- Reveal.js -->
     <link rel="stylesheet" href="reveal.js/dist/reset.css" />
     <link rel="stylesheet" href="reveal.js/dist/reveal.css" />
@@ -127,6 +127,24 @@ chapter of [Pro Git](https://git-scm.com/book/en/v2/)
         </section>
         <section id="committing-slide">
           <h2>Committing</h2>
+          <div class="git-container">
+            <div class="right">
+              <pre><code></code></pre>
+            </div>
+            <div class="left">
+              <div style="text-align: left" class="git-diagram"></div>
+            </div>
+          </div>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
+## Commits are immutable
+- When you revert a commit, it creates a new commit
+- When you amend a commit, it creates a new commit
+          </textarea>
+        </section>
+        <section id="reverting-and-amending-slide">
+          <h2>Reverting and Amending</h2>
           <div class="git-container">
             <div class="right">
               <pre><code></code></pre>
