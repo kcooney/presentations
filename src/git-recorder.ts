@@ -4,9 +4,9 @@ import { Layout } from "./layout";
 /** Records a series of Git operations to be shown on the slide. */
 export class GitRecorder {
   /* If true, `pause()` is implicitly called after all git operations. */
-  singleStepMode = false;
+  singleStepMode;
 
-  printCommands = true;
+  printCommands;
   readonly repo: Repo;
   readonly _operations: GitOperation[] = [];
   private paused = true;
@@ -15,9 +15,14 @@ export class GitRecorder {
   private readonly recordRepo: Repo;
   private recording = true;
 
-  constructor(seed: string) {
+  constructor(
+    seed: string,
+    { singleStepMode = false, printCommands = true } = {},
+  ) {
     this.repo = new Repo(seed);
     this.recordRepo = new Repo(seed);
+    this.singleStepMode = singleStepMode;
+    this.printCommands = printCommands;
   }
 
   get operations(): ReadonlyArray<GitOperation> {
@@ -162,7 +167,11 @@ export class CommitOperation extends GitOperation {
     amend: boolean;
     printCommand: boolean;
   }) {
-    let cmd = amend ? "git commit --amend" : "git commit";
+    let cmd = amend
+      ? "git commit --amend"
+      : reverse
+        ? "git revert"
+        : "git commit";
     if (msg) {
       cmd += ` -m '${msg}'`;
     }
@@ -173,7 +182,11 @@ export class CommitOperation extends GitOperation {
   }
 
   protected doExecute(repo: Repo) {
-    repo.commit(this.msg, { amend: this.amend });
+    let msg = this.msg;
+    if (this.reverse && !msg) {
+      msg = `revert ${repo.head.msg}`;
+    }
+    repo.commit(msg, { amend: this.amend });
   }
 
   override visit(visitor: GitOperationVisitor) {

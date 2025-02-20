@@ -20,7 +20,7 @@ export class GitSvgSlide implements Slide {
    */
   static add(
     sectionId: string,
-    config: Config = { showHead: false },
+    config: Config,
     recorder: (git: GitRecorder) => void,
   ): void {
     addSlide(sectionId, section => {
@@ -83,7 +83,11 @@ export class GitSvgSlide implements Slide {
     private _hasMoreCommands = true;
 
     constructor(private readonly slide: GitSvgSlide) {
-      this.git = new GitRecorder(slide.seed);
+      const config = slide.config;
+      this.git = new GitRecorder(slide.seed, {
+        singleStepMode: config.singleStepMode ?? true,
+        printCommands: config.printCommands ?? true,
+      });
       this.renderer = new SvgGitRenderer(
         slide.svgContainer,
         this.git,
@@ -92,7 +96,6 @@ export class GitSvgSlide implements Slide {
     }
 
     record(): void {
-      this.git.singleStepMode = true;
       this.git.checkout("main");
       this.slide.recorder(this.git);
     }

@@ -220,18 +220,19 @@ export class Repo {
     if (!ref) {
       throw Error('Merge "" - not something we can merge');
     }
-    let commit = this._branches.get(ref);
-    if (!commit) {
-      commit = this.commitMap.get(ref);
-      if (!commit) {
+    let mergeFromCommit = this._branches.get(ref);
+    if (!mergeFromCommit) {
+      mergeFromCommit = this.commitMap.get(ref);
+      if (!mergeFromCommit) {
         throw Error(`Merge ${ref} - not something we can merge`);
       }
     }
-    const parent = this._head;
+    const prevHead = this._head;
     const c = this._commit("Merge " + ref);
-    c.addParent(parent);
-    c.addParent(commit);
+    c.addParent(prevHead);
+    c.addParent(mergeFromCommit);
     this.publish("commitCreated", c);
+    this.publish("commitRefsUpdated", prevHead);
     return c;
   }
 

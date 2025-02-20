@@ -1,28 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <title>Sample reveal.js Typescript Deck</title>
-	<link rel="icon" href="data:image/png;base64,iVBORw0KGgo=">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgo=" />
     <!-- Reveal.js -->
-    <link rel="stylesheet" href="reveal.js/dist/reset.css">
-    <link rel="stylesheet" href="reveal.js/dist/reveal.css">
-    <link rel="stylesheet" href="reveal.js/dist/theme/simple.css">
+    <link rel="stylesheet" href="reveal.js/dist/reset.css" />
+    <link rel="stylesheet" href="reveal.js/dist/reveal.css" />
+    <link rel="stylesheet" href="reveal.js/dist/theme/simple.css" />
     <!-- Theme used for syntax highlighted code -->
-    <link rel="stylesheet" href="reveal.js/plugin/highlight/monokai.css">
+    <link rel="stylesheet" href="reveal.js/plugin/highlight/monokai.css" />
 
     <script type="module" src="../bundle.js"></script>
 
     <style>
       .reveal h2 {
-	    font-size: 70px
+        font-size: 70px;
       }
     </style>
   </head>
   <body>
     <div id="simple" class="reveal">
       <div class="slides">
-	    <section data-markdown data-background-gradient="radial-gradient(#3177eeff, #113d8aff)">
-	      <textarea data-template>
+        <section
+          data-markdown
+          data-background-gradient="radial-gradient(#3177eeff, #113d8aff)">
+          <textarea data-template>
 	        # Sample reveal.js Typescript Deck
 
 	        Kevin W. Cooney - https://github.com/kcooney
@@ -31,11 +33,12 @@
 	        ---
 	        - Use the forward arrow key to see transitions
 	        - Use the arrows to change slides
-	      </textarea>
-	    </section>
-	    <section>
-		  <h2>Setup</h2>
-		  <pre><code data-trim data-noescape>
+	      </textarea
+          >
+        </section>
+        <section>
+          <h2>Setup</h2>
+          <pre><code data-trim data-noescape>
 $ npm init
 $ npm i --global typescript
 $ npm i reveal.js
@@ -52,10 +55,10 @@ dist/
 $ # create ßtsconfig.json
 $ tsc
 	      </code></pre>
-	    </section>
-		<section>
-			<h2>Adding a Plugin</h2>
-			<pre><code data-trim data-noescape>
+        </section>
+        <section>
+          <h2>Adding a Plugin</h2>
+          <pre><code data-trim data-noescape>
 $ npm install --save reveal.js-menu
 $ mkdir typings
 $ cat > typings/reveal.js-menu.d.ts
@@ -65,14 +68,15 @@ declare module 'reveal.js-menu' {
 }
 ^D
 			</code></pre>
-		  </section>
-	    <section data-markdown>
-	      <textarea data-template>
+        </section>
+        <section data-markdown>
+          <textarea data-template>
 	        ## References and Resources
 	        - [reveal.js](https://revealjs.com) - HTML presentation framework
 			- [Front-end with TypeScript Tutorial](https://techblog.topdesk.com/coding/front-end-with-typescript-tutorial-step-1-to-3-minimal-typescript/)
-	      </textarea>
-	    </section>
+	      </textarea
+          >
+        </section>
       </div>
     </div>
   </body>
