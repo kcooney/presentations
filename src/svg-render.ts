@@ -183,8 +183,10 @@ export class SvgGitRenderer {
     for (const commit of this.repo.commits) {
       this.commitCreated(commit, rendering);
     }
-    this.repo.onCommitCreated(commit => this.commitCreated(commit, rendering));
-    this.repo.onCommitRefsUpdated(this.commitRefsUpdated.bind(this));
+    if (this.layoutRepo !== this.repo) {
+      this.repo.onCommitCreated(commit => this.commitCreated(commit, rendering));
+      this.repo.onCommitRefsUpdated(this.commitRefsUpdated.bind(this));
+    }
   }
 
   private commitCreated(commit: Commit, rendering: Rendering) {
