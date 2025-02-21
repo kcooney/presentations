@@ -169,7 +169,7 @@ export class Repo implements ReadonlyRepo {
     sorted.forEach(dfs);
   }
 
-  commit(msg: string, { amend = false } = {}) {
+  commit(msg: string, { amend = false } = {}): Commit {
     const prevHead = this._head;
     let parent = prevHead;
     if (amend) {
@@ -186,6 +186,18 @@ export class Repo implements ReadonlyRepo {
     this.publish("commitCreated", c);
     this.publish("commitRefsUpdated", prevHead);
     return c;
+  }
+
+  revert(ref = "HEAD"): Commit {
+    if (!ref) {
+      throw Error('Revert "" - not something we can revert');
+    }
+    const commit = this.resolve(ref);
+    if (!commit) {
+      throw Error(`Revert ${ref} - not something we can revert`);
+    }
+    const msg = `Revert ${commit.msg}`;
+    return this.commit(msg);
   }
 
   /** Adds a tag to the commit that HEAD points to. */
@@ -232,12 +244,12 @@ export class Repo implements ReadonlyRepo {
     if (!ref) {
       throw Error('Merge "" - not something we can merge');
     }
-    let mergeFromCommit = this._branches.get(ref);
+    const mergeFromCommit = this.resolve(ref);
     if (!mergeFromCommit) {
-      mergeFromCommit = this.commitMap.get(ref);
-      if (!mergeFromCommit) {
-        throw Error(`Merge ${ref} - not something we can merge`);
-      }
+      throw Error(`Merge ${ref} - not something we can merge`);
+    }
+    if (mergeFromCommit == this._head) {
+      return this._head;
     }
     const prevHead = this._head;
     const c = this._commit("Merge " + ref);
@@ -265,6 +277,20 @@ export class Repo implements ReadonlyRepo {
     this.curBranch = ref;
     this.publish("commitRefsUpdated", oldHead);
     this.publish("commitRefsUpdated", this._head);
+  }
+
+  private resolve(ref: string): InternalCommit | undefined {
+    if (ref === "HEAD") {
+      return this._head;
+    }
+    let c = this._branches.get(ref);
+    if (!c) {
+      c = this.commitMap.get(ref);
+      if (!c) {
+        c = this._tags.get(ref);
+      }
+    }
+    return c;
   }
 
   private subscribe<T extends GitEvents>(

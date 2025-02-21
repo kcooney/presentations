@@ -69,15 +69,20 @@ export class GitRecorder {
     this.paused = true;
   }
 
-  commit({ msg = "", reverse = false, amend = false } = {}) {
-    if (reverse && amend) {
-      throw Error("Cannot pass both reverse=true and amend=true");
-    }
+  commit({ msg = "", amend = false } = {}) {
     this.enqueue(
       new CommitOperation({
         msg: msg,
-        reverse: reverse,
         amend: amend,
+        printCommand: this.printCommands,
+      }),
+    );
+    return this;
+  }
+
+  revert(ref = "HEAD") {
+    this.enqueue(
+      new RevertOperation(ref, {
         printCommand: this.printCommands,
       }),
     );
@@ -170,45 +175,54 @@ export abstract class GitOperation {
 
 export class CommitOperation extends GitOperation {
   public readonly msg: string;
-  public readonly reverse: boolean;
   public readonly amend: boolean;
 
   constructor({
     msg,
-    reverse,
     amend,
     printCommand,
   }: {
-    msg: string;
-    reverse: boolean;
-    amend: boolean;
+    msg?: string;
+    amend?: boolean;
     printCommand: boolean;
   }) {
-    let cmd = amend
-      ? "git commit --amend"
-      : reverse
-        ? "git revert"
-        : "git commit";
+    amend ??= false;
+    msg ??= "";
+    let cmd = amend ? "git commit --amend" : "git commit";
     if (msg) {
       cmd += ` -m '${msg}'`;
     }
     super({ printCommand: printCommand, command: cmd });
-    this.reverse = reverse;
     this.amend = amend;
     this.msg = msg;
   }
 
   protected doExecute(repo: Repo) {
-    let msg = this.msg;
-    if (this.reverse && !msg) {
-      msg = `revert ${repo.head.msg}`;
-    }
-    repo.commit(msg, { amend: this.amend });
+    repo.commit(this.msg, { amend: this.amend });
   }
 
   override visit(visitor: GitOperationVisitor) {
     visitor.visit(this);
     visitor.visitCommit(this);
+  }
+}
+
+export class RevertOperation extends GitOperation {
+  constructor(
+    public readonly ref = "HEAD",
+    { printCommand = true } = {},
+  ) {
+    const cmd = `git revert ${ref}`;
+    super({ printCommand: printCommand, command: cmd });
+  }
+
+  protected doExecute(repo: Repo) {
+    repo.revert(this.ref);
+  }
+
+  override visit(visitor: GitOperationVisitor) {
+    visitor.visit(this);
+    visitor.visitRevert(this);
   }
 }
 
@@ -321,6 +335,8 @@ export class GitOperationVisitor {
   visit(_op: GitOperation): void {}
 
   visitCommit(_op: CommitOperation): void {}
+
+  visitRevert(_op: RevertOperation): void {}
 
   visitCheckout(_op: CheckoutOperation): void {}
 

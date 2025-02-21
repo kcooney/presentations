@@ -69,7 +69,7 @@ function gitBranchingDesk() {
       git.commit({ msg: "Add shooter" });
       git.printCommands = true;
       git.commit({ msg: "Shoot faster" });
-      git.commit({ reverse: true });
+      git.revert();
       git.commit({ msg: "Use giro" });
       git.commit({ msg: "Use gyro", amend: true });
     },
