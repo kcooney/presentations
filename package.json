@@ -9,6 +9,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@hazae41/disposable-stack-polyfill": "^1.0.1",
     "@svgdotjs/svg.js": "^3.2.4",
     "graphology": "^0.25.4",
     "mermaid": "^11.4.1",

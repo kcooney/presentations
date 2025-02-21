@@ -1,3 +1,4 @@
+import "@hazae41/disposable-stack-polyfill";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
 import { GitPlayback, GitRecorder } from "./git-recorder.js";
@@ -60,7 +61,7 @@ export class GitSvgSlide implements Slide {
   }
 
   private resetSlide(): void {
-    this.state.kill();
+    this.state.dispose();
     this.state = new GitSvgSlide.State(this);
   }
 
@@ -78,7 +79,7 @@ export class GitSvgSlide implements Slide {
   }
 
   static readonly State = class {
-    private renderer: SvgGitRenderer | null = null;
+    private readonly disposableStack = new DisposableStack();
     private readonly git: GitRecorder;
     private playback: GitPlayback | null = null;
     private _hasMoreCommands = true;
@@ -100,12 +101,13 @@ export class GitSvgSlide implements Slide {
       let playback = this.playback;
       if (!playback) {
         playback = this.playback = this.git.replay();
-        this.renderer = new SvgGitRenderer(
+        const renderer = new SvgGitRenderer(
           this.slide.svgContainer,
           playback,
           this.slide.config,
         );
-        this.renderer.render();
+        renderer.render();
+        this.disposableStack.defer(() => renderer.dispose());
       }
       this._hasMoreCommands = playback.play();
 
@@ -119,8 +121,8 @@ export class GitSvgSlide implements Slide {
       return this._hasMoreCommands;
     }
 
-    kill(): void {
-      this.renderer?.kill();
+    dispose(): void {
+      this.disposableStack.dispose();
     }
   };
 }

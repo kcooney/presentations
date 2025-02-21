@@ -168,9 +168,11 @@ export class SvgGitRenderer {
     this.draw.addTo(container);
   }
 
-  kill() {
-    this.draw.node.textContent = "";
-    this.draw.node.remove();
+  dispose() {
+    if (this.draw.node.parentNode) {
+      this.draw.node.textContent = "";
+      this.draw.remove();
+    }
   }
 
   render() {
