@@ -134,8 +134,7 @@ function gitBranchingDesk() {
       .commit({ msg: "Add intake" })
       .checkout("drive")
       .pause();
-    git.commit({ msg: "Tune drive" })
-      .pause();
+    git.commit({ msg: "Tune drive" }).pause();
     git.commit({ msg: "Tune drive" }).pause();
     git.printCommands = true;
     git.singleStepMode = true;

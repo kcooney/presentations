@@ -184,7 +184,9 @@ export class SvgGitRenderer {
       this.commitCreated(commit, rendering);
     }
     if (this.layoutRepo !== this.repo) {
-      this.repo.onCommitCreated(commit => this.commitCreated(commit, rendering));
+      this.repo.onCommitCreated(commit =>
+        this.commitCreated(commit, rendering),
+      );
       this.repo.onCommitRefsUpdated(this.commitRefsUpdated.bind(this));
     }
   }
