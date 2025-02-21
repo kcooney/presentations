@@ -11,8 +11,6 @@
   "dependencies": {
     "@hazae41/disposable-stack-polyfill": "^1.0.1",
     "@svgdotjs/svg.js": "^3.2.4",
-    "graphology": "^0.25.4",
-    "mermaid": "^11.4.1",
     "reveal.js": "^5.1.0",
     "sigma": "^3.0.0",
     "ts-jest-resolver": "^2.0.1",

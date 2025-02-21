@@ -1,8 +1,6 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
 import { GitRecorder } from "./git-recorder.js";
-import { GraphologyGitSlide } from "./graphology-slide.js";
-import { MermaidGitSlide } from "./mermaid-slide.js";
 import { GitSvgSlide } from "./svg-slide.js";
 
 function simpleDesk() {
@@ -19,28 +17,6 @@ function simpleDesk() {
 }
 
 function gitBranchingDesk() {
-  MermaidGitSlide.add("mermaid-demo-slide", git => {
-    git.commit().checkout("develop", { createBranch: true }).commit();
-    git.singleStepMode = false;
-    git.commit().commit().pause();
-    git.checkout("main").pause();
-    git.merge("develop").pause();
-    git.commit().pause();
-    git.commit();
-  });
-
-  GraphologyGitSlide.add("graphology-demo-slide", { showHead: true }, git => {
-    git.commit().checkout("develop", { createBranch: true }).commit();
-    git.singleStepMode = false;
-    git.commit().commit().pause();
-    git.tag("origin/develop").pause();
-    git.checkout("main").pause();
-    git.merge("develop").pause();
-    git.commit().pause();
-    git.commit({ msg: "fix buil" }).pause();
-    git.commit({ msg: "fix build", amend: true });
-  });
-
   function svgDemoRecorder(git: GitRecorder) {
     git.commit().checkout("develop", { createBranch: true }).commit();
     git.singleStepMode = false;
