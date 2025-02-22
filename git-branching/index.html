@@ -19,19 +19,30 @@
 
       .git-container {
         height: auto;
-        overflow: hidden;
         display: none;
+        position: relative;
       }
 
       .git-container .right {
         float: right;
         width: 600px;
+        position: relative;
+        z-index: 10;
+      }
+
+      .git-container .right pre {
+        margin: 1px;
+        background: lightgray; /* older browsers */
+        background: rgba(211, 211, 211, 1); /* opacity (newer browsers) */
       }
 
       .git-container .left {
         float: none;
         width: auto;
+        position: absolute;
+        left: 0px;
         overflow: hidden;
+        z-index: 2;
       }
 
       .git-container .top {
@@ -44,9 +55,10 @@
         overflow: hidden;
       }
 
-      .sigma-container {
-        height: 500px;
-        width: 500px;
+      .git-container .bottom pre {
+        margin: 1px;
+        background: lightgray; /* older browsers */
+        background: rgba(211, 211, 211, 1); /* opacity (newer browsers) */
       }
     </style>
   </head>

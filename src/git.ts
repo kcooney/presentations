@@ -272,11 +272,13 @@ export class Repo implements ReadonlyRepo {
       }
       ref = "";
     }
-    const oldHead = this._head;
-    this._head = newHead;
     this.curBranch = ref;
-    this.publish("commitRefsUpdated", oldHead);
-    this.publish("commitRefsUpdated", this._head);
+    const oldHead = this._head;
+    if (oldHead != newHead) {
+      this._head = newHead;
+      this.publish("commitRefsUpdated", oldHead);
+      this.publish("commitRefsUpdated", this._head);
+    }
   }
 
   private resolve(ref: string): InternalCommit | undefined {

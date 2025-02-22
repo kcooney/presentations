@@ -44,7 +44,7 @@ function gitBranchingDesk() {
 
   GitSvgSlide.add(
     "svg-horizontal-demo-slide",
-    { showHead: true, horizontal: true },
+    { showHead: true, horizontal: true, showBranchNames: true },
     svgDemoRecorder,
   );
 
