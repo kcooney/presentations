@@ -1,44 +1,35 @@
 import * as svgjs from "@svgdotjs/svg.js";
 
-interface SizeLike {
+type Size = {
   height: number;
   width: number;
-}
+};
 
-export class SvgComponent<E extends svgjs.Element> {
-  public readonly margin: number;
-  private _size: SizeLike | undefined;
+export class Component<E extends svgjs.Element> {
+  readonly margin: number;
+  private _size: Size | undefined;
 
   constructor(
     readonly element: E,
-    { margin }: { margin?: number } = {},
+    { margin }: { margin: number },
   ) {
-    this.margin = margin ?? 0;
+    this.margin = margin;
   }
 
-  public addTo(parent: svgjs.Dom | HTMLElement | string, i?: number): this {
-    this.element.addTo(parent, i);
-    return this;
-  }
-
-  public remove(): void {
-    this.element.remove();
-  }
-
-  public get width(): number {
+  get width(): number {
     return this.size().width;
   }
 
-  public get height(): number {
+  get height(): number {
     return this.size().height;
   }
 
-  private size() {
+  private size(): Size {
     this._size = this._size ?? this.element.bbox();
     return this._size;
   }
 
-  public move({
+  move({
     x,
     y,
     cx,
@@ -49,30 +40,38 @@ export class SvgComponent<E extends svgjs.Element> {
     cx?: number;
     cy?: number;
   }): void {
-    const bbox = this.element.bbox();
-    let dx = 0;
-    let dy = 0;
-    if (cx !== undefined) {
-      x = cx - bbox.width / 2;
-    }
-    if (x !== undefined) {
-      dx = roundPixels(x - bbox.x);
-    }
-    if (cy !== undefined) {
-      y = cy - bbox.height / 2;
-    }
-    if (y !== undefined) {
-      dy = roundPixels(y - bbox.y);
-    }
-    if (dx || dy) {
-      this.element.dmove(dx, dy);
-    }
+    move(this.element, { x: x, y: y, cx: cx, cy: cy });
+  }
+
+  static wrap<E extends svgjs.Element>(
+    element: E,
+    { margin }: { margin: number },
+  ): Component<E> {
+    return new Component<E>(element, { margin: margin });
   }
 }
 
-export abstract class SvgContainer extends SvgComponent<svgjs.G> {
-  constructor({ margin }: { margin?: number }) {
-    super(new svgjs.G(), { margin: margin });
+export function move(
+  element: svgjs.Element,
+  { x, y, cx, cy }: { x?: number; y?: number; cx?: number; cy?: number },
+): void {
+  const bbox = element.bbox();
+  let dx = 0;
+  let dy = 0;
+  if (cx !== undefined) {
+    x = cx - bbox.width / 2;
+  }
+  if (x !== undefined) {
+    dx = roundPixels(x - bbox.x);
+  }
+  if (cy !== undefined) {
+    y = cy - bbox.height / 2;
+  }
+  if (y !== undefined) {
+    dy = roundPixels(y - bbox.y);
+  }
+  if (dx || dy) {
+    element.dmove(dx, dy);
   }
 }
 

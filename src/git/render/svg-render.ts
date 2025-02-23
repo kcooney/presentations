@@ -187,14 +187,25 @@ class Rendering {
   }
 }
 
+class Layers {
+  readonly commit: svgjs.G;
+  readonly branchLabel: svgjs.G;
+
+  constructor(draw: svgjs.Svg) {
+    this.commit = draw.group();
+    this.branchLabel = draw.group();
+  }
+}
+
 export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SvgCommit>();
-  private readonly svgBranches = new Map<string, SvgBranch>();
+  private readonly svgBranches = new Map<string, SvgBranchLabel>();
   private rendering: Rendering | null = null;
   private readonly repo: ReadonlyRepo;
   private readonly layoutRepo: ReadonlyRepo;
   private readonly options: ConfigOptions;
   private readonly draw: svgjs.Svg;
+  private readonly layers: Layers;
 
   constructor(
     container: HTMLElement,
@@ -215,6 +226,7 @@ export class SvgGitRenderer {
     this.options = { ...DEFAULTS, ...defaults, ...config, ...overrides };
     this.draw = svgjs.SVG();
     this.draw.addTo(container);
+    this.layers = new Layers(this.draw);
   }
 
   dispose() {
@@ -253,7 +265,7 @@ export class SvgGitRenderer {
       const coordinates = rendering.toXY(position);
       const color = getColor(position);
       const svgCommit = new SvgCommit(
-        this.draw,
+        this.layers,
         this.options,
         coordinates,
         color,
@@ -282,25 +294,28 @@ export class SvgGitRenderer {
       return;
     }
 
-    const branches: SvgBranch[] = [];
+    const branchLabels: SvgBranchLabel[] = [];
     if (this.options.showBranchNames) {
       for (const [branch, tip] of this.repo.branches) {
         if (tip === commit) {
           let svgBranch = this.svgBranches.get(branch);
           if (!svgBranch) {
-            svgBranch = new SvgBranch(this.options.branch, {
-              branchName: branch,
-              color: svgCommit.color,
-            });
-            svgBranch.addTo(this.draw);
+            svgBranch = new SvgBranchLabel(
+              this.layers,
+              this.options.branch.label,
+              {
+                branchName: branch,
+                color: svgCommit.color,
+              },
+            );
             this.svgBranches.set(branch, svgBranch);
           }
-          branches.push(svgBranch);
+          branchLabels.push(svgBranch);
         }
       }
     }
     const head = this.options.showHead ? this.repo.head : null;
-    svgCommit.drawRefs(head, branches);
+    svgCommit.drawRefs(head, branchLabels);
   }
 
   private prerender(): Rendering {
@@ -328,13 +343,12 @@ class SvgCommit {
   private readonly coordinates: ReadonlyXY;
   private readonly textAnchorX: number;
   private readonly circle: svgjs.Circle;
-  private readonly description: svgjs.Text | null = null;
-  private readonly branches = new Map<string, SvgBranch>();
+  private readonly description: SvgCommitText | null = null;
   private readonly message;
-  private svgRefs: svg.SvgComponent<svgjs.Text> | null = null;
+  private svgRefs: SvgCommitText | null = null;
 
   constructor(
-    private readonly draw: svgjs.Svg,
+    private readonly layers: Layers,
     private readonly options: ConfigOptions,
     coordinates: ReadonlyXY,
     color: string,
@@ -349,7 +363,7 @@ class SvgCommit {
     this.coordinates = coordinates;
     this.color = color;
 
-    this.circle = this.draw.circle(COMMIT_RADIUS * 2);
+    this.circle = this.layers.commit.circle(COMMIT_RADIUS * 2);
     this.circle.node.classList.add("commit");
     this.circle.center(this.coordinates.x, this.coordinates.y).fill(this.color);
 
@@ -358,11 +372,16 @@ class SvgCommit {
       if (this.options.showCommitTags && this.commit.tags.length) {
         msg = " ⇠ " + this.commit.tags.join(" ⇠ ") + msg;
       }
-      this.description = this.draw.text(msg).font(COMMIT_FONT);
-      this.description.move(
-        rendering.textAnchorX,
-        this.circle.bbox().cy - this.description.bbox().height / 2,
+      this.description = new SvgCommitText(
+        this.layers,
+        this.options.commit,
+        msg,
       );
+      this.description.element.font(COMMIT_FONT);
+      this.description.move({
+        x: rendering.textAnchorX,
+        cy: this.coordinates.y,
+      });
     } else {
       this.circle.element("title").words(this.message); // Add hover text
     }
@@ -375,36 +394,21 @@ class SvgCommit {
     parentNode.parentElement?.insertBefore(path.node, parentNode);
   }
 
-  drawRefs(head: Commit | null, svgBranches: SvgBranch[]) {
+  drawRefs(head: Commit | null, branchLabels: SvgBranchLabel[]) {
     let refs: string[] = [];
     if (this.options.showCommitTags && this.commit.tags.length) {
       if (this.description) {
         const msg = this.message + " ⇠ " + this.commit.tags.join(" ⇠ ");
-        this.description.text(msg);
+        this.description.element.text(msg);
       } else {
         refs.concat(this.commit.tags);
       }
     }
 
-    const commitBbox = this.circle.bbox();
-    let x = this.options.horizontal
-      ? commitBbox.x2 + LABEL_INDENT
-      : this.textAnchorX;
-    const x0 = x;
-    const cy = commitBbox.cy;
-
-    function addToRight(c: svg.SvgComponent<svgjs.Element>) {
-      if (x != x0) {
-        x += c.margin;
-      }
-      c.move({ x: x, cy: cy });
-      x += c.width + c.margin;
-    }
+    const elements: svg.Component<svgjs.Element>[] = [];
 
     if (this.options.showBranchNames) {
-      for (const svgBranch of svgBranches) {
-        addToRight(svgBranch);
-      }
+      elements.push(...branchLabels);
     }
     if (this.commit === head) {
       refs = refs.concat(["HEAD"]);
@@ -413,13 +417,27 @@ class SvgCommit {
     if (refs.length) {
       // For vertical graphs (move the refs down so they are below the commands)
       const refText = refs.map(tag => `⇠ ${tag}`).join(" ");
-      addToRight(this.makeSvgRefs(refText));
+      elements.push(this.makeSvgRefs(refText));
     } else {
       this.removeSvgRefs();
     }
 
+    const commitBbox = this.circle.bbox();
+    let x = this.options.horizontal
+      ? commitBbox.x2 + LABEL_INDENT
+      : this.textAnchorX;
+    const cy = commitBbox.cy;
+
     if (this.description) {
-      this.description.x(x);
+      elements.push(this.description);
+    }
+
+    for (const [index, component] of elements.entries()) {
+      if (index > 0) {
+        x += component.margin;
+      }
+      component.move({ x: x, cy: cy });
+      x += svg.roundPixels(component.width + component.margin);
     }
   }
 
@@ -427,17 +445,14 @@ class SvgCommit {
     if (this.svgRefs) {
       this.svgRefs.element.text(text);
     } else {
-      this.svgRefs = new svg.SvgComponent(
-        new svgjs.Text().plain(text).font(LABEL_FONT),
-        { margin: this.options.commit.msg.margin },
-      );
-      this.svgRefs.addTo(this.draw);
+      this.svgRefs = new SvgCommitText(this.layers, this.options.commit, text);
+      this.svgRefs.element.font(LABEL_FONT);
     }
     return this.svgRefs;
   }
 
   private removeSvgRefs(): void {
-    this.svgRefs?.remove();
+    this.svgRefs?.element.remove();
     this.svgRefs = null;
   }
 
@@ -456,16 +471,24 @@ class SvgCommit {
   }
 }
 
-class SvgBranch extends svg.SvgContainer {
+class SvgCommitText extends svg.Component<svgjs.Text> {
+  constructor(layers: Layers, style: CommitStyle, text: string) {
+    super(layers.commit.plain(text), { margin: style.msg.margin });
+  }
+}
+
+class SvgBranchLabel extends svg.Component<svgjs.G> {
   readonly branchName: string;
 
   constructor(
-    style: BranchStyle,
+    layers: Layers,
+    style: BranchLabelStyle,
     { color, branchName }: { color: string; branchName: string },
   ) {
-    super({ margin: style.label.margin });
-    const padding = style.label.textPadding;
+    super(layers.branchLabel.group(), { margin: style.margin });
     this.branchName = branchName;
+
+    const padding = style.textPadding;
     const text = new svgjs.Text().plain(branchName);
     text.font(BRANCH_FONT);
     text.x(padding.x);
@@ -474,9 +497,9 @@ class SvgBranch extends svg.SvgContainer {
     const rectHeight = svg.roundPixels(height + 2 * padding.y, { up: true });
     const rectWidth = svg.roundPixels(width + 2 * padding.x, { up: true });
     const rect = new svgjs.Rect().size(rectWidth, rectHeight);
-    rect.attr("stroke", style.label.strokeColor ?? color);
-    rect.fill(style.label.bgColor);
-    rect.radius(style.label.borderRadius);
+    rect.attr("stroke", style.strokeColor ?? color);
+    rect.fill(style.bgColor);
+    rect.radius(style.borderRadius);
     text.move(padding.x, padding.y);
 
     this.element.add(rect).add(text);
