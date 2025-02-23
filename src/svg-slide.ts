@@ -1,6 +1,6 @@
 import "@hazae41/disposable-stack-polyfill";
-import { enableMotion } from "./motion";
-import { Slide, addSlide } from "./slide";
+import { enableMotion } from "./slides/motion";
+import { Slide, addSlide } from "./slides/slide";
 import { GitPlayback, GitRecorder } from "./git/recorder";
 import { Config, SvgGitRenderer } from "./git/render/svg-render";
 import { failWith } from "./util/misc";

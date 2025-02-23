@@ -1,5 +1,5 @@
 import Reveal from "reveal.js";
-import { LEFT_ARROW_KEY, RIGHT_ARROW_KEY } from "./slide.js";
+import { LEFT_ARROW_KEY, RIGHT_ARROW_KEY } from "./slide";
 
 /**
  * Allows the current slide to change in response to the keyboard.
