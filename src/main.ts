@@ -1,7 +1,7 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
-import { GitRecorder } from "./git/recorder.js";
-import { GitSvgSlide } from "./svg-slide.js";
+import { GitRecorder } from "./git/recorder";
+import { GitSvgSlide } from "./svg-slide";
 
 function simpleDesk() {
   Reveal.initialize({

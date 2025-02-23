@@ -2,6 +2,7 @@ import * as svgjs from "@svgdotjs/svg.js";
 import { Commit, ReadonlyRepo, Repo } from "../repo";
 import { Layout, Position } from "./layout";
 import { GitPlayback } from "../recorder";
+import * as svg from "../../util/svg";
 
 const LEFT_MARGIN = 2;
 const RIGHT_MARGIN = 2;
@@ -330,7 +331,7 @@ class SvgCommit {
   private readonly description: svgjs.Text | null = null;
   private readonly branches = new Map<string, SvgBranch>();
   private readonly message;
-  private svgRefs: SvgComponent<svgjs.Text> | null = null;
+  private svgRefs: svg.SvgComponent<svgjs.Text> | null = null;
 
   constructor(
     private readonly draw: svgjs.Svg,
@@ -392,7 +393,7 @@ class SvgCommit {
     const x0 = x;
     const cy = commitBbox.cy;
 
-    function addToRight(c: SvgComponent<svgjs.Element>) {
+    function addToRight(c: svg.SvgComponent<svgjs.Element>) {
       if (x != x0) {
         x += c.margin;
       }
@@ -426,7 +427,7 @@ class SvgCommit {
     if (this.svgRefs) {
       this.svgRefs.element.text(text);
     } else {
-      this.svgRefs = new SvgComponent(
+      this.svgRefs = new svg.SvgComponent(
         new svgjs.Text().plain(text).font(LABEL_FONT),
         { margin: this.options.commit.msg.margin },
       );
@@ -455,83 +456,7 @@ class SvgCommit {
   }
 }
 
-interface SizeLike {
-  height: number;
-  width: number;
-}
-
-class SvgComponent<E extends svgjs.Element> {
-  public readonly margin: number;
-  private _size: SizeLike | undefined;
-
-  constructor(
-    readonly element: E,
-    { margin }: { margin?: number } = {},
-  ) {
-    this.margin = margin ?? 0;
-  }
-
-  public addTo(parent: svgjs.Dom | HTMLElement | string, i?: number): this {
-    this.element.addTo(parent, i);
-    return this;
-  }
-
-  public remove(): void {
-    this.element.remove();
-  }
-
-  public get width(): number {
-    return this.size().width;
-  }
-
-  public get height(): number {
-    return this.size().height;
-  }
-
-  private size() {
-    this._size = this._size ?? this.element.bbox();
-    return this._size;
-  }
-
-  public move({
-    x,
-    y,
-    cx,
-    cy,
-  }: {
-    x?: number;
-    y?: number;
-    cx?: number;
-    cy?: number;
-  }): void {
-    const bbox = this.element.bbox();
-    let dx = 0;
-    let dy = 0;
-    if (cx !== undefined) {
-      x = cx - bbox.width / 2;
-    }
-    if (x !== undefined) {
-      dx = roundPixels(x - bbox.x);
-    }
-    if (cy !== undefined) {
-      y = cy - bbox.height / 2;
-    }
-    if (y !== undefined) {
-      dy = roundPixels(y - bbox.y);
-    }
-    if (dx || dy) {
-      this.element.dmove(dx, dy);
-    }
-  }
-}
-
-abstract class SvgContainer extends SvgComponent<svgjs.G> {
-  constructor({ margin }: { margin?: number }) {
-    super(new svgjs.G(), { margin: margin });
-  }
-}
-
-class SvgBranch extends SvgContainer {
+class SvgBranch extends svg.SvgContainer {
   readonly branchName: string;
 
   constructor(
@@ -546,8 +471,8 @@ class SvgBranch extends SvgContainer {
     text.x(padding.x);
     const { height, width } = text.bbox();
 
-    const rectHeight = roundPixels(height + 2 * padding.y, { up: true });
-    const rectWidth = roundPixels(width + 2 * padding.x, { up: true });
+    const rectHeight = svg.roundPixels(height + 2 * padding.y, { up: true });
+    const rectWidth = svg.roundPixels(width + 2 * padding.x, { up: true });
     const rect = new svgjs.Rect().size(rectWidth, rectHeight);
     rect.attr("stroke", style.label.strokeColor ?? color);
     rect.fill(style.label.bgColor);
@@ -556,11 +481,4 @@ class SvgBranch extends SvgContainer {
 
     this.element.add(rect).add(text);
   }
-}
-
-function roundPixels(n: number, { up }: { up?: boolean } = {}): number {
-  if (up) {
-    n += 0.499;
-  }
-  return Math.round(n * 10) / 10;
 }
