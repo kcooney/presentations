@@ -54,7 +54,9 @@ const LABEL_FONT: Font = {
 const BRANCH_FONT: Font = {
   family: "Arial",
   size: "12pt",
+  weight: "normal",
 };
+const CURRENT_BRANCH_FONT: Font = { ...BRANCH_FONT, weight: "bold" };
 
 const COLORS = ["#0000ec", "#dede00", "purple"];
 
@@ -199,7 +201,7 @@ class Layers {
 
 export class SvgGitRenderer {
   private readonly drawnCommits = new Map<string, SvgCommit>();
-  private readonly svgBranches = new Map<string, SvgBranchLabel>();
+  private readonly branchLabels = new Map<string, SvgBranchLabel>();
   private rendering: Rendering | null = null;
   private readonly repo: ReadonlyRepo;
   private readonly layoutRepo: ReadonlyRepo;
@@ -296,11 +298,12 @@ export class SvgGitRenderer {
 
     const branchLabels: SvgBranchLabel[] = [];
     if (this.options.showBranchNames) {
+      const curBranch = this.repo.currentBranch;
       for (const [branch, tip] of this.repo.branches) {
         if (tip === commit) {
-          let svgBranch = this.svgBranches.get(branch);
-          if (!svgBranch) {
-            svgBranch = new SvgBranchLabel(
+          let branchLabel = this.branchLabels.get(branch);
+          if (!branchLabel) {
+            branchLabel = new SvgBranchLabel(
               this.layers,
               this.options.branch.label,
               {
@@ -308,9 +311,10 @@ export class SvgGitRenderer {
                 color: svgCommit.color,
               },
             );
-            this.svgBranches.set(branch, svgBranch);
+            this.branchLabels.set(branch, branchLabel);
           }
-          branchLabels.push(svgBranch);
+          branchLabel.setIsCurrent(branch === curBranch);
+          branchLabels.push(branchLabel);
         }
       }
     }
@@ -479,10 +483,13 @@ class SvgCommitText extends svg.Component<svgjs.Text> {
 
 class SvgBranchLabel extends svg.Component<svgjs.G> {
   readonly branchName: string;
+  private readonly text: svgjs.Text;
+  private readonly rect: svgjs.Rect;
+  private isCurrent = false;
 
   constructor(
     layers: Layers,
-    style: BranchLabelStyle,
+    private readonly style: BranchLabelStyle,
     { color, branchName }: { color: string; branchName: string },
   ) {
     super(layers.branchLabel.group(), { margin: style.margin });
@@ -491,17 +498,32 @@ class SvgBranchLabel extends svg.Component<svgjs.G> {
     const padding = style.textPadding;
     const text = new svgjs.Text().plain(branchName);
     text.font(BRANCH_FONT);
-    text.x(padding.x);
-    const { height, width } = text.bbox();
+    text.move(padding.x, padding.y);
+    this.text = text;
 
-    const rectHeight = svg.roundPixels(height + 2 * padding.y, { up: true });
-    const rectWidth = svg.roundPixels(width + 2 * padding.x, { up: true });
-    const rect = new svgjs.Rect().size(rectWidth, rectHeight);
+    const rect = new svgjs.Rect();
     rect.attr("stroke", style.strokeColor ?? color);
     rect.fill(style.bgColor);
     rect.radius(style.borderRadius);
-    text.move(padding.x, padding.y);
+    this.rect = rect;
+    this.resize();
 
     this.element.add(rect).add(text);
+  }
+
+  private resize() {
+    const { height, width } = this.text.bbox();
+    const padding = this.style.textPadding;
+    const rectHeight = svg.roundPixels(height + 2 * padding.y, { up: true });
+    const rectWidth = svg.roundPixels(width + 2 * padding.x, { up: true });
+    this.rect.size(rectWidth, rectHeight);
+  }
+
+  setIsCurrent(value: boolean) {
+    if (value != this.isCurrent) {
+      this.isCurrent = value;
+      this.text.font(value ? CURRENT_BRANCH_FONT : BRANCH_FONT);
+      this.resize();
+    }
   }
 }

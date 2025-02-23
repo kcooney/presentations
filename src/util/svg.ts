@@ -1,13 +1,7 @@
 import * as svgjs from "@svgdotjs/svg.js";
 
-type Size = {
-  height: number;
-  width: number;
-};
-
 export class Component<E extends svgjs.Element> {
   readonly margin: number;
-  private _size: Size | undefined;
 
   constructor(
     readonly element: E,
@@ -17,16 +11,11 @@ export class Component<E extends svgjs.Element> {
   }
 
   get width(): number {
-    return this.size().width;
+    return this.element.bbox().width;
   }
 
   get height(): number {
-    return this.size().height;
-  }
-
-  private size(): Size {
-    this._size = this._size ?? this.element.bbox();
-    return this._size;
+    return this.element.bbox().height;
   }
 
   move({
