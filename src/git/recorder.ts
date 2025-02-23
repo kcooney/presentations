@@ -1,4 +1,4 @@
-import { Commit, ReadonlyRepo, Repo } from "./git";
+import { Commit, ReadonlyRepo, Repo } from "./repo";
 
 export class GitPlayback {
   private readonly _repo: Repo;

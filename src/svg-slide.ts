@@ -1,8 +1,8 @@
 import "@hazae41/disposable-stack-polyfill";
 import { enableMotion } from "./motion.js";
 import { Slide, addSlide } from "./slide.js";
-import { GitPlayback, GitRecorder } from "./git-recorder.js";
-import { Config, SvgGitRenderer } from "./svg-render.js";
+import { GitPlayback, GitRecorder } from "./git/recorder.js";
+import { Config, SvgGitRenderer } from "./git/render/svg-render.js";
 import { failWith } from "./util.js";
 
 export class GitSvgSlide implements Slide {

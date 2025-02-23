@@ -1,9 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
-import * as git from "../src/git";
+import { Repo } from "../../src/git/repo";
 
 describe("Repo", () => {
   test("constructor with valid seed", () => {
-    const repo = new git.Repo("seed");
+    const repo = new Repo("seed");
     expect(repo.head.msg).toBe("First commit");
     expect(repo.head.parents).toStrictEqual([]);
     expect(repo["commits"]).toContain(repo.head);

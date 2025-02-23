@@ -1,7 +1,7 @@
 import * as svgjs from "@svgdotjs/svg.js";
-import { Commit, ReadonlyRepo, Repo } from "./git";
-import { Layout, Position } from "./layout.js";
-import { GitPlayback } from "./git-recorder";
+import { Commit, ReadonlyRepo, Repo } from "../repo";
+import { Layout, Position } from "./layout";
+import { GitPlayback } from "../recorder";
 
 const LEFT_MARGIN = 2;
 const RIGHT_MARGIN = 2;

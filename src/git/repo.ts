@@ -1,4 +1,4 @@
-import * as random from "./random.js";
+import * as random from "./random";
 
 export interface Commit {
   readonly msg: string;

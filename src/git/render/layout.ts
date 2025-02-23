@@ -1,4 +1,4 @@
-import { Commit, ReadonlyRepo } from "./git.js";
+import { Commit, ReadonlyRepo } from "../repo";
 
 export interface Position {
   readonly i: number;
