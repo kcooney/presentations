@@ -14,7 +14,7 @@ const SPACE_BETWEEN_BRANCHES = 50;
 const LINE_WIDTH = 8;
 const COMMIT_RADIUS = 11;
 const LABEL_INDENT = 8;
-const TEXT_INDENT = 188;
+const TEXT_INDENT = 30;
 const MAX_TEXT_WIDTH = 500;
 
 type Font = {
