@@ -19,7 +19,7 @@
     "@jest/globals": "^29.7.0",
     "@types/events": "^3.0.3",
     "@types/jest": "^29.5.14",
-    "@types/reveal.js": "^5.0.4",
+    "@types/reveal.js": "^5.0.5",
     "esbuild": "0.24.2",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^10.0.1",
