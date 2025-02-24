@@ -1,5 +1,5 @@
-bundle.js
-bundle.js.map
+decks/bundle.js
+decks/bundle.js.map
 
 # Logs
 logs
