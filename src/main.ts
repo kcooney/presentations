@@ -1,5 +1,6 @@
 import Reveal from "reveal.js";
 import Markdown from "reveal.js/plugin/markdown/markdown.esm.js";
+import { PRIMARY_BRANCH } from "./git/repo";
 import { GitRecorder } from "./git/recorder";
 import { GitSvgSlide } from "./svg-slide";
 
@@ -30,7 +31,7 @@ function gitBranchingDesk() {
     // added above
     git.commit().pause();
     git.tag("origin/develop").pause();
-    git.checkout("main").pause();
+    git.checkout(PRIMARY_BRANCH).pause();
     git.merge("develop").pause();
     git.commit({ msg: "fix buil" }).pause();
     git.commit({ msg: "fix build", amend: true });
@@ -87,7 +88,7 @@ function gitBranchingDesk() {
     // Simulate someone else commiting on 'main'
     git.singleStepMode = false;
     git.printCommands = false;
-    git.checkout("main").commit({ msg: "Add climb" });
+    git.checkout(PRIMARY_BRANCH).commit({ msg: "Add climb" });
   });
 
   GitSvgSlide.add("tagging-slide", { showCommitTags: true }, git => {
@@ -98,7 +99,7 @@ function gitBranchingDesk() {
 
   GitSvgSlide.add(
     "head-slide",
-    { showHead: true, branchOrder: ["main", "drive"] },
+    { showHead: true, branchOrder: [PRIMARY_BRANCH, "drive"] },
     git => {
       git.commit({ msg: "Add shooter" });
       const addShooterCommit = git.head.sha1;
@@ -109,7 +110,7 @@ function gitBranchingDesk() {
       git.singleStepMode = false;
       git.printCommands = false;
       git
-        .checkout("main")
+        .checkout(PRIMARY_BRANCH)
         .commit({ msg: "Add intake" })
         .checkout("drive")
         .pause();

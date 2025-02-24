@@ -1,4 +1,4 @@
-import { Commit, ReadonlyRepo } from "../repo";
+import { Commit, ReadonlyRepo, PRIMARY_BRANCH } from "../repo";
 
 export interface Position {
   readonly i: number;
@@ -45,7 +45,7 @@ export class Layout {
 
     // Next, get the j coordinates, using branchOrder if provided.
     const activeBranches: Commit[] = [];
-    for (const branch of branchOrder ?? ["main"]) {
+    for (const branch of branchOrder ?? [PRIMARY_BRANCH]) {
       const commit = repo.branches.get(branch);
       if (commit) {
         activeBranches.push(commit);

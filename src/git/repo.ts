@@ -1,5 +1,19 @@
 import * as random from "./random";
 
+export const PRIMARY_BRANCH = "main";
+
+export interface Ref {
+  readonly commit: Commit;
+  readonly branch?: string;
+}
+
+class InternalRef implements Ref {
+  constructor(
+    readonly commit: InternalCommit,
+    readonly branch?: string,
+  ) {}
+}
+
 export interface Commit {
   readonly msg: string;
   readonly sha1: string;
@@ -96,20 +110,20 @@ export interface ReadonlyRepo {
 
 /** Simulates a git repository. */
 export class Repo implements ReadonlyRepo {
-  private _head: InternalCommit;
+  private _head: InternalRef;
   private readonly _commits: InternalCommit[];
   private readonly commitMap = new Map<string, InternalCommit>();
   private readonly rand: random.Random;
   private readonly _branches = new Map<string, InternalCommit>();
   private readonly _tags = new Map<string, InternalCommit>();
   private eventBus: EventTarget | null = null;
-  private curBranch: string; // An empty string for "detached head"
 
   constructor(public readonly seed: string) {
     this._commits = [];
     this.rand = new random.SplitMix32(random.hash32(seed));
-    this.curBranch = "main";
-    this._head = this._commit("First commit");
+    const commit = new InternalCommit("", "", 0);
+    this._head = new InternalRef(commit, PRIMARY_BRANCH);
+    this._commit("First commit");
   }
 
   onCommitRefsUpdated(handlerFn: (payload: Commit) => void) {
@@ -121,11 +135,11 @@ export class Repo implements ReadonlyRepo {
   }
 
   get head(): Commit {
-    return this._head;
+    return this._head.commit;
   }
 
   get currentBranch(): string | undefined {
-    return this.curBranch || undefined;
+    return this._head.branch;
   }
 
   get commits(): ReadonlyArray<Commit> {
@@ -171,20 +185,20 @@ export class Repo implements ReadonlyRepo {
 
   commit(msg: string, { amend = false } = {}): Commit {
     const prevHead = this._head;
-    let parent = prevHead;
+    let parent = prevHead.commit;
     if (amend) {
-      if (this._head.parents.length == 0) {
+      if (this._head.commit.parents.length == 0) {
         throw Error("Cannot ammend the first commit");
       }
-      if (this._head.parents.length > 1) {
+      if (this._head.commit.parents.length > 1) {
         throw Error("Cannot ammend a merge commit");
       }
-      parent = this._head.parents[0] as InternalCommit;
+      parent = this._head.commit.parents[0] as InternalCommit;
     }
     const c = this._commit(msg);
     c.addParent(parent);
     this.publish("commitCreated", c);
-    this.publish("commitRefsUpdated", prevHead);
+    this.publish("commitRefsUpdated", prevHead.commit);
     return c;
   }
 
@@ -208,22 +222,23 @@ export class Repo implements ReadonlyRepo {
     if (this._tags.has(name)) {
       throw Error("Already a tag with name '" + name + "'");
     }
-    this._tags.set(name, this._head);
-    this._head.addTag(name);
-    this.publish("commitRefsUpdated", this._head);
-    return this._head;
+    this._tags.set(name, this._head.commit);
+    this._head.commit.addTag(name);
+    this.publish("commitRefsUpdated", this._head.commit);
+    return this._head.commit;
   }
 
   private _commit(msg: string): InternalCommit {
-    if (!this.curBranch) {
+    const branch = this._head.branch;
+    if (!branch) {
       throw Error('Cannot commit in "detached head" mode');
     }
     const t = this._commits.length + 1;
     const c = new InternalCommit(msg, this.rand.nextHex(), t);
     this._commits.push(c);
     this.commitMap.set(c.sha1, c);
-    this._branches.set(this.curBranch, c);
-    this._head = c;
+    this._branches.set(branch, c);
+    this._head = new InternalRef(c, branch);
     return c;
   }
 
@@ -235,12 +250,12 @@ export class Repo implements ReadonlyRepo {
     if (this._branches.has(name)) {
       throw Error("Already a branch with name '" + name + "'");
     }
-    this._branches.set(name, this._head);
-    this.publish("commitRefsUpdated", this._head);
+    this._branches.set(name, this._head.commit);
+    this.publish("commitRefsUpdated", this._head.commit);
   }
 
   /** Merges the given ref to the current branch. */
-  merge(ref: string) {
+  merge(ref: string): Commit {
     if (!ref) {
       throw Error('Merge "" - not something we can merge');
     }
@@ -248,10 +263,10 @@ export class Repo implements ReadonlyRepo {
     if (!mergeFromCommit) {
       throw Error(`Merge ${ref} - not something we can merge`);
     }
-    if (mergeFromCommit == this._head) {
-      return this._head;
+    if (mergeFromCommit == this._head.commit) {
+      return this._head.commit;
     }
-    const prevHead = this._head;
+    const prevHead = this._head.commit;
     const c = this._commit("Merge " + ref);
     c.addParent(prevHead);
     c.addParent(mergeFromCommit);
@@ -260,34 +275,39 @@ export class Repo implements ReadonlyRepo {
     return c;
   }
 
-  checkout(ref: string) {
+  checkout(ref: string): void {
     if (!ref) {
       throw Error("Empty string is not a valid pathspec");
     }
-    let newHead = this._branches.get(ref);
-    if (!newHead) {
-      newHead = this.commitMap.get(ref);
-      if (!newHead) {
+    let newBranch: string | undefined;
+    let newHeadCommit = this._branches.get(ref);
+    if (newHeadCommit) {
+      newBranch = ref;
+    } else {
+      newHeadCommit = this.commitMap.get(ref);
+      if (!newHeadCommit) {
         throw Error(`pathspec '${ref}' did not match any file(s) known to git`);
       }
       ref = "";
     }
-    const oldCurBranch = this.curBranch;
-    this.curBranch = ref;
     const oldHead = this._head;
-    if (oldHead !== newHead) {
-      this._head = newHead;
-      this.publish("commitRefsUpdated", oldHead);
-      this.publish("commitRefsUpdated", this._head);
-    } else if (oldCurBranch && oldCurBranch != this.curBranch) {
-      const tip = this._branches.get(oldCurBranch);
-      this.publish("commitRefsUpdated", tip);
+    this._head = new InternalRef(newHeadCommit, newBranch);
+    if (oldHead.commit !== newHeadCommit) {
+      this.publish("commitRefsUpdated", oldHead.commit);
+      this.publish("commitRefsUpdated", newHeadCommit);
+    } else if (oldHead.branch !== this._head.branch) {
+      if (oldHead.branch) {
+        this.publish("commitRefsUpdated", oldHead.commit);
+      }
+      if (this._head.branch) {
+        this.publish("commitRefsUpdated", this._head.commit);
+      }
     }
   }
 
   private resolve(ref: string): InternalCommit | undefined {
     if (ref === "HEAD") {
-      return this._head;
+      return this._head.commit;
     }
     let c = this._branches.get(ref);
     if (!c) {

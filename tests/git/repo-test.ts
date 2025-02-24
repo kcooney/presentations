@@ -8,6 +8,6 @@ describe("Repo", () => {
     expect(repo.head.parents).toStrictEqual([]);
     expect(repo["commits"]).toContain(repo.head);
     expect(repo["commits"].length).toBe(1);
-    expect(repo["curBranch"]).toBe("main");
+    expect(repo.currentBranch).toBe("main");
   });
 });
