@@ -1,6 +1,6 @@
 import * as random from "./random";
 
-const PRIMARY_BRANCH = "main";
+export const PRIMARY_BRANCH = "main";
 
 export interface Ref {
   readonly commit: Commit;

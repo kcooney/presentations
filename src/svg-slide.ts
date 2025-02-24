@@ -93,7 +93,6 @@ export class GitSvgSlide implements Slide {
     }
 
     record(): void {
-      this.git.checkout("main");
       this.slide.recorder(this.git);
     }
 
