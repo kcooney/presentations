@@ -6,6 +6,8 @@
     "prebundle": "tsc",
     "bundle": "esbuild ./dist/main.js --bundle --sourcemap --outfile=decks/bundle.js",
     "test": "jest",
+    "docs": "typedoc --name Presentations --entryPointStrategy Expand src/git src/util src/slides",
+    "postdocs": "prettier --write .",
     "format": "prettier --write .",
     "check-format": "prettier . --check"
   },
@@ -30,6 +32,7 @@
     "prettier": "3.4.2",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "typedoc": "^0.27.8",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.19.1"
   }
