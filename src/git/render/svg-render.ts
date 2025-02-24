@@ -319,8 +319,7 @@ export class SvgGitRenderer {
         }
       }
     }
-    const head = this.options.showHead ? this.repo.head : null;
-    svgCommit.drawRefs(head, branchLabels);
+    svgCommit.drawRefs(this.repo.head, branchLabels);
   }
 
   private prerender(): Rendering {
@@ -399,7 +398,7 @@ class SvgCommit {
     parentNode.parentElement?.insertBefore(path.node, parentNode);
   }
 
-  drawRefs(head: Commit | null, branchLabels: SvgBranchLabel[]) {
+  drawRefs(headCommit: Commit, branchLabels: SvgBranchLabel[]) {
     let refs: string[] = [];
     if (this.options.showCommitTags && this.commit.tags.length) {
       if (this.description) {
@@ -415,7 +414,7 @@ class SvgCommit {
     if (this.options.showBranchNames) {
       elements.push(...branchLabels);
     }
-    if (this.commit === head) {
+    if (this.options.showHead && this.commit === headCommit) {
       refs = refs.concat(["HEAD"]);
     }
 
