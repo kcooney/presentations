@@ -6,13 +6,15 @@ export interface Position {
 }
 
 class CommitWrapper implements Position {
-  branchChildren: CommitWrapper[] = [];
+  readonly branchChildren: Commit[];
 
   constructor(
     public readonly commit: Commit,
     public i = 0,
     public j = 0,
-  ) {}
+  ) {
+    this.branchChildren = commit.branchChildren();
+  }
 }
 
 export class Layout {
@@ -38,39 +40,29 @@ export class Layout {
       commitWrapper.i = maxI - i;
     });
 
-    // Next wrap all of the children.
-    commitWrappers.forEach(wrapper => {
-      wrapper.commit.branchChildren().forEach(commit => {
-        const child = commitWrapperBySha1.get(commit.sha1);
-        if (child) {
-          wrapper.branchChildren.push(child);
-        }
-      });
-    });
-
     // Next, get the j coordinates.
-    const activeBranches: CommitWrapper[] = [];
+    const activeBranches: Commit[] = [];
     let maxJ = 0;
     for (const wrapper of commitWrappers) {
       let child = wrapper.branchChildren.pop();
       if (child) {
         let index = activeBranches.findIndex(w => w === child);
         if (index >= 0) {
-          activeBranches[index] = wrapper;
+          activeBranches[index] = wrapper.commit;
         }
-        // Remove chidren from activeBranches
+        // Remove chidren from activeBranches.
         child = wrapper.branchChildren.pop();
         while (child) {
           index = activeBranches.findIndex(w => w === child);
-          if (index > -1) {
+          if (index >= 0) {
             activeBranches.splice(index, 1);
           }
           child = wrapper.branchChildren.pop();
         }
       } else {
-        activeBranches.push(wrapper);
+        activeBranches.push(wrapper.commit);
       }
-      wrapper.j = activeBranches.findIndex(w => w === wrapper);
+      wrapper.j = activeBranches.findIndex(w => w === wrapper.commit);
       maxJ = Math.max(wrapper.j, maxJ);
     }
 
