@@ -96,6 +96,7 @@ interface ConfigOptions {
   readonly showCommitMsgs: boolean; // defaults to false
   readonly showCommitTags: boolean; // defaults to false
   readonly showBranchNames: boolean; // defaults to false
+  readonly branchOrder?: ReadonlyArray<string>;
 }
 
 /** Config contains all possible configuration values; all fields are optional. */
@@ -327,7 +328,7 @@ export class SvgGitRenderer {
       return this.rendering;
     }
 
-    const layout = Layout.create(this.layoutRepo);
+    const layout = Layout.create(this.layoutRepo, this.options.branchOrder);
     const rendering = new Rendering(layout, this.options);
     this.draw.size(
       rendering.canvasSize.x +

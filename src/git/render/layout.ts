@@ -24,7 +24,10 @@ export class Layout {
     public readonly maxJ: number,
   ) {}
 
-  static create(repo: ReadonlyRepo): Layout {
+  static create(
+    repo: ReadonlyRepo,
+    branchOrder?: ReadonlyArray<string>,
+  ): Layout {
     // Inspired by https://pvigier.github.io/2019/05/06/commit-graph-drawing-algorithms.html
 
     // First do a temporal topological sort, getting the i coordinates.
@@ -40,8 +43,15 @@ export class Layout {
       commitWrapper.i = maxI - i;
     });
 
-    // Next, get the j coordinates.
+    // Next, get the j coordinates, using branchOrder if provided.
     const activeBranches: Commit[] = [];
+    for (const branch of branchOrder ?? ["main"]) {
+      const commit = repo.branches.get(branch);
+      if (commit) {
+        activeBranches.push(commit);
+      }
+    }
+
     let maxJ = 0;
     for (const wrapper of commitWrappers) {
       let child = wrapper.branchChildren.pop();
@@ -60,7 +70,9 @@ export class Layout {
           child = wrapper.branchChildren.pop();
         }
       } else {
-        activeBranches.push(wrapper.commit);
+        if (!activeBranches.some(w => w === wrapper.commit)) {
+          activeBranches.push(wrapper.commit);
+        }
       }
       wrapper.j = activeBranches.findIndex(w => w === wrapper.commit);
       maxJ = Math.max(wrapper.j, maxJ);

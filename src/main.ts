@@ -96,35 +96,34 @@ function gitBranchingDesk() {
     git.commit({ msg: "Shoot faster" });
   });
 
-  GitSvgSlide.add("head-slide", { showHead: true }, git => {
-    git.commit({ msg: "Add shooter" });
-    const addShooterCommit = git.head.sha1;
-    git.commit({ msg: "Shoot faster" });
-    git
-      .checkout("drive", { createBranch: true })
-      .commit({ msg: "Drive subsystem" });
-    git.singleStepMode = false;
-    git.printCommands = false;
-    git
-      .checkout("main")
-      .commit({ msg: "Add intake" })
-      .checkout("drive")
-      .pause();
-    git.commit({ msg: "Tune drive" }).pause();
-    git.commit({ msg: "Tune drive" }).pause();
-    git.printCommands = true;
-    git.singleStepMode = true;
-    git
-      .checkout(addShooterCommit)
-      .checkout("bug-fix", { createBranch: true })
-      .commit({ msg: "Fix shooter angle" });
-    git.commit({ msg: "One more fix" });
-    git.printCommands = false;
-    git.singleStepMode = false;
-    git.checkout("drive").commit({ msg: "re-tune drive" });
-    git.checkout("main").commit({ msg: "lights" });
-    git.checkout("bug-fix");
-  });
+  GitSvgSlide.add(
+    "head-slide",
+    { showHead: true, branchOrder: ["main", "drive"] },
+    git => {
+      git.commit({ msg: "Add shooter" });
+      const addShooterCommit = git.head.sha1;
+      git.commit({ msg: "Shoot faster" });
+      git
+        .checkout("drive", { createBranch: true })
+        .commit({ msg: "Drive subsystem" });
+      git.singleStepMode = false;
+      git.printCommands = false;
+      git
+        .checkout("main")
+        .commit({ msg: "Add intake" })
+        .checkout("drive")
+        .pause();
+      git.commit({ msg: "Tune drive" }).pause();
+      git.commit({ msg: "Tune drive" }).pause();
+      git.printCommands = true;
+      git.singleStepMode = true;
+      git
+        .checkout(addShooterCommit)
+        .checkout("bug-fix", { createBranch: true })
+        .commit({ msg: "Fix shooter angle" });
+      git.commit({ msg: "One more fix" });
+    },
+  );
 
   const urlParams = new URLSearchParams(window.location.search);
   const showHiddenSlides = urlParams.has("showHidden");
