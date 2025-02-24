@@ -32,14 +32,14 @@ There are numerous JavaScript/TypeScript libraries for rendering Git graphs (inc
   around
 - Supporting showing command-line arguments for each transition
 
-[esbuild]: https://esbuild.github.io/
-[ESLint]: https://eslint.org/
-[GitGraph.js]: https://github.com/nicoespeon/gitgraph.js/
-[Jest]: https://jestjs.io/
+[esbuild]: https://esbuild.github.io
+[ESLint]: https://eslint.org
+[GitGraph.js]: https://github.com/nicoespeon/gitgraph.js
+[Jest]: https://jestjs.io
 [Mermaid]: https://mermaid.js.org/syntax/gitgraph.html
-[prettier]: https://prettier.io/
-[Pro Git]: https://git-scm.com/book/en/v2/
+[prettier]: https://prettier.io
+[Pro Git]: https://git-scm.com/book
 [reveal.js]: https://revealjs.com
-[SVG.js]: https://svgjs.dev/
+[SVG.js]: https://svgjs.dev
 [The TypeScript Handbook]: https://www.typescriptlang.org/docs/handbook/intro.html
-[TypeScript]: https://www.typescriptlang.org/
+[TypeScript]: https://www.typescriptlang.org
