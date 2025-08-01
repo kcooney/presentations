@@ -46,7 +46,7 @@ export class Layout {
     // Next, get the j coordinates, using branchOrder if provided.
     const activeBranches: Commit[] = [];
     for (const branch of branchOrder ?? [PRIMARY_BRANCH]) {
-      const commit = repo.branches.get(branch);
+      const commit = repo.getCommit(branch);
       if (commit) {
         activeBranches.push(commit);
       }

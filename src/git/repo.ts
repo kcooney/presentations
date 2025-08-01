@@ -102,7 +102,7 @@ export interface ReadonlyRepo {
   get commits(): ReadonlyArray<Commit>;
   get tags(): ReadonlyMap<string, Commit>;
   get branches(): ReadonlyMap<string, Commit>;
-  getCommit(sha1: string): Commit | undefined;
+  getCommit(ref: string): Commit | undefined;
   temporalTopologicalWalk(callback: (commit: Commit) => void): void;
   onCommitRefsUpdated(handlerFn: (payload: Commit) => void): void;
   onCommitCreated(handlerFn: (payload: Commit) => void): void;
@@ -154,8 +154,16 @@ export class Repo implements ReadonlyRepo {
     return this._branches;
   }
 
-  getCommit(sha1: string): Commit | undefined {
-    return this.commitMap.get(sha1);
+  getCommit(ref: string): Commit | undefined {
+    let commit = this.commitMap.get(ref);
+    if (commit !== undefined) {
+      return commit
+    }
+    commit = this._branches.get(ref);
+    if (commit !== undefined) {
+      return commit
+    }
+    return this._tags.get(ref);
   }
 
   /** Depth-first search that visits commits from latest to earliest */

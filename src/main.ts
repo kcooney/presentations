@@ -62,16 +62,22 @@ function gitBranchingDesk() {
     {
       showHead: false,
       showBranchNames: false,
+      showCommitTags: false,
       singleStepMode: false,
-      printCommands: false,
+      printCommands: true,
+      branchOrder: ["pre-amend", PRIMARY_BRANCH],
     },
     git => {
-      git.singleStepMode = true;
       git.commit({ msg: "Add shooter" });
-      git.printCommands = true;
+      git.singleStepMode = true;
       git.commit({ msg: "Shoot faster" });
       git.revert();
+
       git.commit({ msg: "Use giro" });
+      git.singleStepMode = false;
+      git.printCommands = false;
+      git.tag("pre-amend");
+      git.printCommands = true;
       git.commit({ msg: "Use gyro", amend: true });
     },
   );
