@@ -119,7 +119,7 @@ export class GitSvgSlide implements Slide {
     playInitial(): boolean {
       const [playback] = this.initRenderer();
       this._hasMoreCommands = playback.play();
-      this.updateCode(playback.operations);
+      this.updateCode(playback.executedCommands);
       return this._hasMoreCommands;
     }
 
@@ -134,7 +134,7 @@ export class GitSvgSlide implements Slide {
         renderer.startTransition();
       }
       this._hasMoreCommands = playback.play();
-      this.updateCode(playback.operations);
+      this.updateCode(playback.executedCommands);
       if (animate) {
         renderer.endTransition();
       }
@@ -146,12 +146,7 @@ export class GitSvgSlide implements Slide {
       this.stepTransition();
     }
 
-    private updateCode(
-      operations: ReadonlyArray<{ command: string | null }>,
-    ): void {
-      const commands = operations
-        .map(command => command.command)
-        .filter(command => command !== null);
+    private updateCode(commands: ReadonlyArray<string>): void {
       this.slide.code.innerHTML = "$ " + commands.join("<br />$ ");
     }
 

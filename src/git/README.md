@@ -84,11 +84,19 @@ Fluent builder interface used when defining presentation slides to script Git op
 Step-by-step playback engine driven by slide animations.
 
 - `repo: ReadonlyRepo`: The simulated repository state as of the current step.
-- `operations: ReadonlyArray<GitOperation>`: Operations executed so far.
-- `peekNextOperations(): ReadonlyArray<GitOperation> | null`: Returns upcoming queued operations without consuming them.
-- `hasMoreCommands: boolean`: Indicates whether there are more commands queued to play.
-- `hasMoreCommandsAfterNext: boolean`: Indicates whether more commands remain after the upcoming step.
-- `play(visitor?: GitOperationVisitor | null): boolean`: Executes the next queued chunk of operations on the repo and visits them. Returns `true` if more chunks remain.
+- `operations: ReadonlyArray<GitOperation>`: All operations executed so far across all steps.
+- `executedSteps: ReadonlyArray<PlaybackStep>`: All steps executed so far.
+- `executedCommands: string[]`: All printable commands executed so far.
+- `hasMoreCommands: boolean`: Indicates whether there are more steps queued to play.
+- `play(visitor?: GitOperationVisitor | null): boolean`: Executes the next step on the repo and visits it. Returns `true` if more steps remain.
+
+#### `class PlaybackStep`
+
+Encapsulates one or more Git operations executed together as a single transition step.
+
+- `operations: ReadonlyArray<GitOperation>`: The operations comprising this step.
+- `commands: string[]`: The printable command strings for this step.
+- `execute(repo: Repo, visitor?: GitOperationVisitor | null): void`: Executes the operations against the target repository.
 
 #### `abstract class GitOperation` & Hierarchy
 

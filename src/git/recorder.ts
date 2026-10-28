@@ -1,18 +1,42 @@
 import { Commit, ReadonlyRepo, Repo } from "./repo";
 
+/** A distinct transition step containing one or more Git operations. */
+export class PlaybackStep {
+  constructor(public readonly operations: ReadonlyArray<GitOperation>) {}
+
+  /** Commands to display for this step (excluding operations with printCommand: false). */
+  get commands(): string[] {
+    return this.operations
+      .map(op => op.command)
+      .filter((cmd): cmd is string => cmd !== null);
+  }
+
+  execute(repo: Repo, visitor: GitOperationVisitor | null = null): void {
+    this.operations.forEach(command => {
+      command.execute(repo);
+      if (visitor) {
+        command.visit(visitor);
+      }
+    });
+  }
+}
+
 export class GitPlayback {
   private readonly _repo: Repo;
-  private readonly _operations: GitOperation[] = [];
-  // Queue invariant: all nested lists are non-empty.
-  private readonly queue: GitOperation[][] = [];
+  private readonly _executedSteps: PlaybackStep[] = [];
+  private readonly pendingSteps: PlaybackStep[] = [];
 
   constructor(
     readonly recordRepo: Repo,
-    queue: GitOperation[][],
+    steps: PlaybackStep[] | GitOperation[][],
   ) {
     this._repo = new Repo(recordRepo.seed);
-    queue.forEach(chunk => {
-      this.queue.push(chunk.slice());
+    steps.forEach(item => {
+      if (item instanceof PlaybackStep) {
+        this.pendingSteps.push(new PlaybackStep(item.operations.slice()));
+      } else {
+        this.pendingSteps.push(new PlaybackStep(item.slice()));
+      }
     });
   }
 
@@ -20,39 +44,35 @@ export class GitPlayback {
     return this._repo;
   }
 
+  /** All operations executed so far across all steps. */
   get operations(): ReadonlyArray<GitOperation> {
-    return this._operations;
+    return this._executedSteps.flatMap(step => step.operations);
   }
 
-  /** The next set of operations queued to be run on the next play() call, or null if queue is empty. */
-  peekNextOperations(): ReadonlyArray<GitOperation> | null {
-    return this.queue[0] ?? null;
+  /** All steps executed so far. */
+  get executedSteps(): ReadonlyArray<PlaybackStep> {
+    return this._executedSteps;
+  }
+
+  /** All printable commands executed so far. */
+  get executedCommands(): string[] {
+    return this._executedSteps.flatMap(step => step.commands);
   }
 
   /** Whether there are more commands queued to play. */
   get hasMoreCommands(): boolean {
-    return this.queue.length > 0;
-  }
-
-  /** Whether there are more commands queued after the upcoming play() call. */
-  get hasMoreCommandsAfterNext(): boolean {
-    return this.queue.length > 1;
+    return this.pendingSteps.length > 0;
   }
 
   /** Runs the next set of commands; returns true if there are more commands. */
   play(visitor: GitOperationVisitor | null = null): boolean {
-    const commands = this.queue.shift();
-    if (!commands) {
+    const step = this.pendingSteps.shift();
+    if (!step) {
       return false; // run() called without any commands to play!
     }
-    commands.forEach(command => {
-      command.execute(this._repo);
-      if (visitor) {
-        command.visit(visitor);
-      }
-    });
-    this._operations.push(...commands);
-    return this.queue.length > 0;
+    step.execute(this._repo, visitor);
+    this._executedSteps.push(step);
+    return this.pendingSteps.length > 0;
   }
 }
 
@@ -133,7 +153,10 @@ export class GitRecorder {
 
   /** Runs the next set of commands; returns true if there are more commands. */
   replay() {
-    return new GitPlayback(this._repo, this.queue);
+    return new GitPlayback(
+      this._repo,
+      this.queue.map(chunk => new PlaybackStep(chunk)),
+    );
   }
 
   private enqueue(command: GitOperation) {

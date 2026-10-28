@@ -1,36 +1,32 @@
 import { describe, expect, test } from "@jest/globals";
-import { GitRecorder } from "../../src/git/recorder";
+import { GitRecorder, PlaybackStep } from "../../src/git/recorder";
 
-describe("GitPlayback", () => {
-  test("peekNextOperations and hasMoreCommands", () => {
+describe("GitPlayback and PlaybackStep", () => {
+  test("step execution, executedCommands, and hasMoreCommands", () => {
     const recorder = new GitRecorder("seed", { singleStepMode: true });
     recorder.commit({ msg: "Commit 1" }).commit({ msg: "Commit 2" });
 
     const playback = recorder.replay();
     expect(playback.hasMoreCommands).toBe(true);
-    expect(playback.hasMoreCommandsAfterNext).toBe(true);
-
-    const next1 = playback.peekNextOperations();
-    expect(next1).not.toBeNull();
-    expect(next1!.length).toBe(1);
-    expect(next1?.[0]?.command).toContain("Commit 1");
+    expect(playback.executedSteps).toEqual([]);
+    expect(playback.executedCommands).toEqual([]);
 
     // Play first step
     const hasMore1 = playback.play();
     expect(hasMore1).toBe(true);
     expect(playback.hasMoreCommands).toBe(true);
-    expect(playback.hasMoreCommandsAfterNext).toBe(false);
-
-    const next2 = playback.peekNextOperations();
-    expect(next2).not.toBeNull();
-    expect(next2!.length).toBe(1);
-    expect(next2?.[0]?.command).toContain("Commit 2");
+    expect(playback.executedSteps.length).toBe(1);
+    expect(playback.executedSteps[0]).toBeInstanceOf(PlaybackStep);
+    expect(playback.executedCommands.length).toBe(1);
+    expect(playback.executedCommands[0]).toContain("Commit 1");
 
     // Play second step
     const hasMore2 = playback.play();
     expect(hasMore2).toBe(false);
     expect(playback.hasMoreCommands).toBe(false);
-    expect(playback.hasMoreCommandsAfterNext).toBe(false);
-    expect(playback.peekNextOperations()).toBeNull();
+    expect(playback.executedSteps.length).toBe(2);
+    expect(playback.executedCommands.length).toBe(2);
+    expect(playback.executedCommands[1]).toContain("Commit 2");
+    expect(playback.operations.length).toBe(2);
   });
 });
