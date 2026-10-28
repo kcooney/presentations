@@ -256,10 +256,12 @@ export class SvgGitRenderer {
   }
 
   startTransition(): void {
-    this.draw.node.querySelectorAll(".svg-fade-in").forEach(node => {
-      node.classList.remove("svg-fade-in");
-    });
-    this.isTransitioning = true;
+    if (this.options.animate) {
+      this.draw.node.querySelectorAll(".svg-fade-in").forEach(node => {
+        node.classList.remove("svg-fade-in");
+      });
+      this.isTransitioning = true;
+    }
   }
 
   endTransition(): void {
