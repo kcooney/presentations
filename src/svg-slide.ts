@@ -73,16 +73,22 @@ export class GitSvgSlide implements Slide {
     if (index === 0) {
       this.resetSlide();
       this.prepareSlide();
+      return this.state.playInitial();
     }
-    this.state.play();
-    return this.state.hasMoreCommands;
+    if (index === -1) {
+      return this.state.playInitial();
+    }
+    return this.state.stepTransition();
   }
 
   static readonly State = class {
     private readonly disposableStack = new DisposableStack();
     private readonly git: GitRecorder;
     private playback: GitPlayback | null = null;
+    private renderer: SvgGitRenderer | null = null;
     private _hasMoreCommands = true;
+    private pendingTimeout: ReturnType<typeof setTimeout> | null = null;
+    private pendingPlay: (() => void) | null = null;
 
     constructor(private readonly slide: GitSvgSlide) {
       const config = slide.config;
@@ -96,24 +102,102 @@ export class GitSvgSlide implements Slide {
       this.slide.recorder(this.git);
     }
 
-    play(): void {
+    private initRenderer(): [GitPlayback, SvgGitRenderer] {
       let playback = this.playback;
-      if (!playback) {
+      let renderer = this.renderer;
+      if (!playback || !renderer) {
         playback = this.playback = this.git.replay();
-        const renderer = new SvgGitRenderer(
+        renderer = this.renderer = new SvgGitRenderer(
           this.slide.svgContainer,
           playback,
           this.slide.config,
         );
         renderer.render();
-        this.disposableStack.defer(() => renderer.dispose());
+        this.disposableStack.defer(() => renderer?.dispose());
       }
-      this._hasMoreCommands = playback.play();
+      return [playback, renderer];
+    }
 
-      const commands = playback.operations
+    playInitial(): boolean {
+      this.cancelPending();
+      const [playback] = this.initRenderer();
+      this._hasMoreCommands = playback.play();
+      this.updateCode(playback.operations);
+      return this._hasMoreCommands;
+    }
+
+    stepTransition(): boolean {
+      this.flushPending();
+      const [playback, renderer] = this.initRenderer();
+      if (!playback.hasMoreCommands) {
+        return false;
+      }
+
+      const hasMoreAfter = playback.hasMoreCommandsAfterNext;
+
+      // 1. Reveal text in the 'code' block immediately
+      const nextCommands = playback.peekNextOperations() ?? [];
+      const allOperations = [...playback.operations, ...nextCommands];
+      this.updateCode(allOperations);
+
+      const animate = this.slide.config.animate ?? true;
+      const delay = animate ? (this.slide.config.animationDelay ?? 300) : 0;
+
+      const runStep = () => {
+        if (animate) {
+          renderer.startTransition();
+        }
+        this._hasMoreCommands = playback.play();
+        if (animate) {
+          renderer.endTransition();
+        }
+      };
+
+      if (delay > 0) {
+        this.pendingPlay = runStep;
+        this.pendingTimeout = setTimeout(() => {
+          this.pendingTimeout = null;
+          this.pendingPlay = null;
+          runStep();
+        }, delay);
+      } else {
+        runStep();
+      }
+
+      return hasMoreAfter;
+    }
+
+    play(): void {
+      this.stepTransition();
+    }
+
+    private updateCode(
+      operations: ReadonlyArray<{ command: string | null }>,
+    ): void {
+      const commands = operations
         .map(command => command.command)
         .filter(command => command !== null);
       this.slide.code.innerHTML = "$ " + commands.join("<br />$ ");
+    }
+
+    cancelPending(): void {
+      if (this.pendingTimeout !== null) {
+        clearTimeout(this.pendingTimeout);
+        this.pendingTimeout = null;
+        this.pendingPlay = null;
+      }
+    }
+
+    flushPending(): void {
+      if (this.pendingTimeout !== null) {
+        clearTimeout(this.pendingTimeout);
+        this.pendingTimeout = null;
+        const play = this.pendingPlay;
+        this.pendingPlay = null;
+        if (play) {
+          play();
+        }
+      }
     }
 
     get hasMoreCommands(): boolean {
@@ -121,6 +205,7 @@ export class GitSvgSlide implements Slide {
     }
 
     dispose(): void {
+      this.cancelPending();
       this.disposableStack.dispose();
     }
   };

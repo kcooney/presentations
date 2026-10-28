@@ -97,6 +97,9 @@ interface ConfigOptions {
   readonly showCommitTags: boolean; // defaults to false
   readonly showBranchNames: boolean; // defaults to false
   readonly branchOrder?: ReadonlyArray<string>;
+  readonly animate: boolean; // defaults to true
+  readonly animationDelay: number; // defaults to 300ms
+  readonly animationDuration: number; // defaults to 500ms
 }
 
 /** Config contains all possible configuration values; all fields are optional. */
@@ -125,6 +128,9 @@ const DEFAULTS: ConfigOptions = {
   showBranchNames: false,
   singleStepMode: true,
   printCommands: true,
+  animate: true,
+  animationDelay: 300,
+  animationDuration: 500,
 };
 const HORIZONTAL_CONFIG_DEFAULTS: Config = {
   showHead: false,
@@ -209,6 +215,7 @@ export class SvgGitRenderer {
   private readonly options: ConfigOptions;
   private readonly draw: svgjs.Svg;
   private readonly layers: Layers;
+  private isTransitioning = false;
 
   constructor(
     container: HTMLElement,
@@ -229,7 +236,33 @@ export class SvgGitRenderer {
     this.options = { ...DEFAULTS, ...defaults, ...config, ...overrides };
     this.draw = svgjs.SVG();
     this.draw.addTo(container);
+    const duration = (this.options.animationDuration ?? 500) / 1000;
+    const style = this.draw.element("style");
+    style.words(`
+      @keyframes svg-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .svg-fade-in {
+        animation: svg-fade-in ${duration}s ease-in-out forwards;
+      }
+    `);
     this.layers = new Layers(this.draw);
+  }
+
+  startTransition(): void {
+    this.draw.node.querySelectorAll(".svg-fade-in").forEach(node => {
+      node.classList.remove("svg-fade-in");
+    });
+    this.isTransitioning = true;
+  }
+
+  endTransition(): void {
+    this.isTransitioning = false;
   }
 
   dispose() {
@@ -277,13 +310,20 @@ export class SvgGitRenderer {
       );
       this.drawnCommits.set(commit.sha1, svgCommit);
 
+      if (this.isTransitioning) {
+        svgCommit.fadeIn();
+      }
+
       // Color of the line to the first parent commit is the same as this commit.
       // Color of the line to the other parents are the color of the parent.
       commit.parents.forEach((parentCommit, index) => {
         const parentSvgCommit = this.drawnCommits.get(parentCommit.sha1);
         if (parentSvgCommit) {
           const lineColor = index == 0 ? color : parentSvgCommit.color;
-          svgCommit.drawEdgeToParent(parentSvgCommit, lineColor);
+          const edge = svgCommit.drawEdgeToParent(parentSvgCommit, lineColor);
+          if (this.isTransitioning) {
+            edge.node.classList.add("svg-fade-in");
+          }
         }
       });
     }
@@ -316,10 +356,13 @@ export class SvgGitRenderer {
           }
           branchLabel.setIsCurrent(branch === curBranch);
           branchLabels.push(branchLabel);
+          if (this.isTransitioning) {
+            branchLabel.fadeIn();
+          }
         }
       }
     }
-    svgCommit.drawRefs(this.repo.head, branchLabels);
+    svgCommit.drawRefs(this.repo.head, branchLabels, this.isTransitioning);
   }
 
   private prerender(): Rendering {
@@ -391,19 +434,34 @@ class SvgCommit {
     }
   }
 
-  drawEdgeToParent(parent: SvgCommit, lineColor: string): void {
+  fadeIn(): void {
+    this.circle.node.classList.add("svg-fade-in");
+    this.description?.element.node.classList.add("svg-fade-in");
+  }
+
+  drawEdgeToParent(parent: SvgCommit, lineColor: string): svgjs.Shape {
     const parentNode = parent.circle.node;
     const path = SvgCommit.path(parent.coordinates, this.coordinates);
     path.stroke({ width: LINE_WIDTH, color: lineColor }).fill();
     parentNode.parentElement?.insertBefore(path.node, parentNode);
+    return path;
   }
 
-  drawRefs(headCommit: Commit, branchLabels: SvgBranchLabel[]) {
+  drawRefs(
+    headCommit: Commit,
+    branchLabels: SvgBranchLabel[],
+    isTransitioning = false,
+  ) {
     let refs: string[] = [];
     if (this.options.showCommitTags && this.commit.tags.length) {
       if (this.description) {
         const msg = this.message + " ⇠ " + this.commit.tags.join(" ⇠ ");
         this.description.element.text(msg);
+        if (isTransitioning) {
+          this.description.element.node.classList.remove("svg-fade-in");
+          void this.description.element.node.clientLeft;
+          this.description.element.node.classList.add("svg-fade-in");
+        }
       } else {
         refs.concat(this.commit.tags);
       }
@@ -421,7 +479,13 @@ class SvgCommit {
     if (refs.length) {
       // For vertical graphs (move the refs down so they are below the commands)
       const refText = refs.map(tag => `⇠ ${tag}`).join(" ");
-      elements.push(this.makeSvgRefs(refText));
+      const svgRefs = this.makeSvgRefs(refText);
+      elements.push(svgRefs);
+      if (isTransitioning) {
+        svgRefs.element.node.classList.remove("svg-fade-in");
+        void svgRefs.element.node.clientLeft;
+        svgRefs.element.node.classList.add("svg-fade-in");
+      }
     } else {
       this.removeSvgRefs();
     }
@@ -525,5 +589,12 @@ class SvgBranchLabel extends svg.Component<svgjs.G> {
       this.text.font(value ? CURRENT_BRANCH_FONT : BRANCH_FONT);
       this.resize();
     }
+  }
+
+  fadeIn(): void {
+    const node = this.element.node;
+    node.classList.remove("svg-fade-in");
+    void node.clientLeft;
+    node.classList.add("svg-fade-in");
   }
 }

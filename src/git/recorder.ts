@@ -24,6 +24,21 @@ export class GitPlayback {
     return this._operations;
   }
 
+  /** The next set of operations queued to be run on the next play() call, or null if queue is empty. */
+  peekNextOperations(): ReadonlyArray<GitOperation> | null {
+    return this.queue[0] ?? null;
+  }
+
+  /** Whether there are more commands queued to play. */
+  get hasMoreCommands(): boolean {
+    return this.queue.length > 0;
+  }
+
+  /** Whether there are more commands queued after the upcoming play() call. */
+  get hasMoreCommandsAfterNext(): boolean {
+    return this.queue.length > 1;
+  }
+
   /** Runs the next set of commands; returns true if there are more commands. */
   play(visitor: GitOperationVisitor | null = null): boolean {
     const commands = this.queue.shift();

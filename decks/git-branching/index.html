@@ -60,6 +60,19 @@
         background: lightgray; /* older browsers */
         background: rgba(211, 211, 211, 1); /* opacity (newer browsers) */
       }
+
+      @keyframes svg-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .svg-fade-in {
+        animation: svg-fade-in 0.5s ease-in-out forwards;
+      }
     </style>
   </head>
 

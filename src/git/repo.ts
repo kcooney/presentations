@@ -157,11 +157,11 @@ export class Repo implements ReadonlyRepo {
   getCommit(ref: string): Commit | undefined {
     let commit = this.commitMap.get(ref);
     if (commit !== undefined) {
-      return commit
+      return commit;
     }
     commit = this._branches.get(ref);
     if (commit !== undefined) {
-      return commit
+      return commit;
     }
     return this._tags.get(ref);
   }

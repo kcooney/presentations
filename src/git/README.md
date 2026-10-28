@@ -85,6 +85,9 @@ Step-by-step playback engine driven by slide animations.
 
 - `repo: ReadonlyRepo`: The simulated repository state as of the current step.
 - `operations: ReadonlyArray<GitOperation>`: Operations executed so far.
+- `peekNextOperations(): ReadonlyArray<GitOperation> | null`: Returns upcoming queued operations without consuming them.
+- `hasMoreCommands: boolean`: Indicates whether there are more commands queued to play.
+- `hasMoreCommandsAfterNext: boolean`: Indicates whether more commands remain after the upcoming step.
 - `play(visitor?: GitOperationVisitor | null): boolean`: Executes the next queued chunk of operations on the repo and visits them. Returns `true` if more chunks remain.
 
 #### `abstract class GitOperation` & Hierarchy
