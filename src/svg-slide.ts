@@ -129,15 +129,10 @@ export class GitSvgSlide implements Slide {
         return false;
       }
 
-      const animate = this.slide.config.animate ?? true;
-      if (animate) {
-        renderer.startTransition();
-      }
+      renderer.startTransition();
       this._hasMoreCommands = playback.play();
       this.updateCode(playback.executedCommands);
-      if (animate) {
-        renderer.endTransition();
-      }
+      renderer.endTransition();
 
       return this._hasMoreCommands;
     }
