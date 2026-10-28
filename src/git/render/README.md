@@ -49,7 +49,7 @@ Configuration options customizing graph appearance and behavior:
 - `branchOrder?: ReadonlyArray<string>`: Desired lane ordering for branches.
 - `singleStepMode?: boolean`: Default `true`.
 - `printCommands?: boolean`: Default `true`.
-- `animate?: boolean`: Whether step transitions fade in changes to the SVG DOM (default `true`).
+- `animate?: boolean`: Whether step transitions fade in changes to the SVG DOM (default `false`).
 - `animationDelay?: number`: Delay in milliseconds before SVG DOM changes fade in after text is revealed (default `300`).
 - `animationDuration?: number`: Duration in milliseconds of the SVG DOM fade-in animation (default `500`).
 - `branch?: BranchStyle`: Styling options for branch badges (colors, padding, border radius, margins).

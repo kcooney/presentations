@@ -97,7 +97,7 @@ interface ConfigOptions {
   readonly showCommitTags: boolean; // defaults to false
   readonly showBranchNames: boolean; // defaults to false
   readonly branchOrder?: ReadonlyArray<string>;
-  readonly animate: boolean; // defaults to true
+  readonly animate: boolean; // defaults to false
   readonly animationDelay: number; // defaults to 300ms
   readonly animationDuration: number; // defaults to 500ms
 }
@@ -128,7 +128,7 @@ const DEFAULTS: ConfigOptions = {
   showBranchNames: false,
   singleStepMode: true,
   printCommands: true,
-  animate: true,
+  animate: false,
   animationDelay: 300,
   animationDuration: 500,
 };
