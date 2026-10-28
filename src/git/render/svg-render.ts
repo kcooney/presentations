@@ -237,6 +237,7 @@ export class SvgGitRenderer {
     this.draw = svgjs.SVG();
     this.draw.addTo(container);
     const duration = (this.options.animationDuration ?? 500) / 1000;
+    const delay = (this.options.animationDelay ?? 300) / 1000;
     const style = this.draw.element("style");
     style.words(`
       @keyframes svg-fade-in {
@@ -248,7 +249,7 @@ export class SvgGitRenderer {
         }
       }
       .svg-fade-in {
-        animation: svg-fade-in ${duration}s ease-in-out forwards;
+        animation: svg-fade-in ${duration}s ease-in-out ${delay}s both;
       }
     `);
     this.layers = new Layers(this.draw);
