@@ -6,14 +6,11 @@ import { GitSvgSlide } from "./svg-slide";
 
 function simpleDesk() {
   Reveal.initialize({
-    plugins: [Markdown /*, RevealMenu*/],
+    plugins: [Markdown],
     width: 1160,
     center: false,
     keyboard: true,
     markdown: {},
-    // menu: {
-    //    path: "reveal.js-menu/"
-    // }
   });
 }
 
@@ -22,13 +19,11 @@ function gitBranchingDesk() {
     git.commit().checkout("develop", { createBranch: true }).commit();
     git.singleStepMode = false;
     git.commit();
-    // added below
     git
       .commit()
       .checkout("deploy", { createBranch: true })
       .commit({ msg: "deploy to dev" });
     git.checkout("develop");
-    // added above
     git.commit().pause();
     git.tag("origin/develop").pause();
     git.checkout(PRIMARY_BRANCH).pause();
